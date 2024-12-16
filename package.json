@@ -1,19 +1,26 @@
 {
   "name": "nfd2nfc",
   "version": "1.0.0",
-  "main": "watcher.js",
+  "main": "main.js",
   "description": "Convert NFD to NFC",
   "dependencies": {
     "chokidar": "^4.0.1",
+    "electron": "^33.2.1",
     "readdirp": "^4.0.2"
   },
-  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node watcher.js",
-    "build": "pkg normalize.js --target node16-macos-x64,node16-linux-x64,node16-win-x64 --output NFD2NFC"
+    "start": "electron .",
+    "package": "electron-packager . NFD2NF --platform=darwin --arch=x64 --icon=build/icons/MacIcon.icns --overwrite --prune=true --out=dist",
+    "pkg": "pkg normalize.js --target node16-macos-x64,node16-linux-x64,node16-win-x64 --output ./dist/NFD2NFC"
+  },
+  "directories": {
+    "output": "dist",
+    "buildResources": "build"
   },
   "keywords": [],
   "author": "pieroot",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "electron-packager": "^17.1.2"
+  }
 }

@@ -1,0 +1,48 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Directory Watcher App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+
+    #selected-directory {
+      margin-top: 20px;
+      word-break: break-all;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>디렉토리 감시 애플리케이션</h1>
+  <button id="select-directory">디렉토리 선택</button>
+  <div id="selected-directory">선택된 디렉토리 없음</div>
+
+  <script>
+    const selectDirButton = document.getElementById('select-directory');
+    const selectedDirDiv = document.getElementById('selected-directory');
+
+    selectDirButton.addEventListener('click', async () => {
+      const result = await window.electronAPI.selectDirectory();
+      if (!result.canceled) {
+        selectedDirDiv.textContent = `선택된 디렉토리: ${ result.path }`;
+      } else {
+        selectedDirDiv.textContent = '디렉토리 선택이 취소되었습니다.';
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -14,20 +14,15 @@ async function normalizeFileName(filePath) {
   const oldName = path.basename(filePath);
   const newName = oldName.normalize("NFC");
 
-  // console.log(`정규화 시도: "${oldName}" -> "${newName}"`);
-
   if (oldName !== newName && !shouldIgnore(oldName)) {
     const newPath = path.join(dir, newName);
     try {
       await fs.rename(filePath, newPath);
-      // console.log(`이름 변경 성공: "${oldName}" -> "${newName}"`);
       return newPath;
     } catch (error) {
       console.error(`이름 변경 실패 ("${oldName}"):`, error);
       return filePath;
     }
-  } else {
-    // console.log(`정규화 필요 없음: "${oldName}"`);
   }
   return filePath;
 }
@@ -40,7 +35,6 @@ async function processDirectory(dirPath) {
 
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
-      // console.log(`파일 처리 시작: "${fullPath}"`);
       if (entry.isDirectory()) {
         if (!shouldIgnore(entry.name)) {
           await processDirectory(fullPath);
@@ -49,10 +43,8 @@ async function processDirectory(dirPath) {
       } else {
         await normalizeFileName(fullPath);
       }
-      // console.log(`파일 처리 완료: "${fullPath}"`);
     }
     await normalizeFileName(dirPath);
-    // console.log(`디렉토리 처리 완료: "${dirPath}"`);
   } catch (error) {
     console.error(`디렉토리 처리 중 오류 발생 ("${dirPath}"):`, error);
   }
