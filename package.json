@@ -1,50 +1,19 @@
 {
-    "name": "nfd-to-nfc-converter",
-    "version": "1.0.0",
-    "main": "main.js",
-    "scripts": {
-        "start": "electron .",
-        "build": "electron-builder",
-        "postinstall": "electron-builder install-app-deps"
-    },
-    "build": {
-        "appId": "com.pieroot.nfdtonfc",
-        "mac": {
-            "category": "public.app-category.utilities",
-            "target": [
-                "dmg",
-                "pkg"
-            ],
-            "hardenedRuntime": true,
-            "gatekeeperAssess": false,
-            "entitlements": "build/entitlements.mac.plist",
-            "entitlementsInherit": "build/entitlements.mac.plist"
-        },
-        "files": [
-            "**/*",
-            "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-            "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
-            "!**/node_modules/*.d.ts",
-            "!**/node_modules/.bin",
-            "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
-            "!.editorconfig",
-            "!**/._*",
-            "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
-            "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
-            "!**/{appveyor.yml,.travis.yml,circle.yml}",
-            "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
-        ],
-        "extraResources": [
-            {
-                "from": "scripts",
-                "to": "scripts",
-                "filter": [
-                    "**/*"
-                ]
-            }
-        ]
-    },
-    "dependencies": {
-        "chokidar": "^4.0.1"
-    }
+  "name": "nfd2nfc",
+  "version": "1.0.0",
+  "main": "watcher.js",
+  "description": "Convert NFD to NFC",
+  "dependencies": {
+    "chokidar": "^4.0.1",
+    "readdirp": "^4.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node watcher.js",
+    "build": "pkg normalize.js --target node16-macos-x64,node16-linux-x64,node16-win-x64 --output NFD2NFC"
+  },
+  "keywords": [],
+  "author": "pieroot",
+  "license": "MIT"
 }
