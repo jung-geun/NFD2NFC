@@ -6,7 +6,8 @@
   "dependencies": {
     "chokidar": "^4.0.1",
     "electron": "^33.2.1",
-    "readdirp": "^4.0.2"
+    "readdirp": "^4.0.2",
+    "sqlite3": "^5.1.7"
   },
   "scripts": {
     "start": "electron .",

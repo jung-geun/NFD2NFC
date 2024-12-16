@@ -11,31 +11,114 @@ const {
 const path = require("path");
 const chokidar = require("chokidar");
 const fs = require("fs").promises;
+const sqlite3 = require("sqlite3").verbose(); // Ensure sqlite3 is required
 
 let tray = null;
 let mainWindow = null;
 
-// 로그 파일 경로 지정
+// Log file path
 const logFilePath = path.join(app.getPath("userData"), "watcher.log");
 
-// 로그 기록 함수
+// SQLite database path
+const dbPath = path.join(app.getPath("userData"), "directories.db");
+
+// Initialize and connect to the SQLite database
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error("Failed to connect to the SQLite database:", err);
+  } else {
+    console.log("Connected to the SQLite database.");
+  }
+});
+
+// Create the directories table if it doesn't exist
+db.serialize(() => {
+  db.run(
+    `
+    CREATE TABLE IF NOT EXISTS directories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      path TEXT NOT NULL UNIQUE
+    )
+  `,
+    (err) => {
+      if (err) {
+        console.error("Failed to create directories table:", err);
+      }
+    }
+  );
+});
+
+// Function to log messages to the log file
 async function log(message) {
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${message}\n`;
-  await fs.appendFile(logFilePath, logMessage);
+  try {
+    await fs.appendFile(logFilePath, logMessage);
+  } catch (error) {
+    console.error("Failed to write to log file:", error);
+  }
 }
 
-// 무시할 파일/디렉토리를 결정하는 함수
+// Function to determine if a file/directory should be ignored
 function shouldIgnore(itemName) {
   const ignoredItems = [".git", "node_modules", ".env"];
   return ignoredItems.includes(itemName);
 }
 
-// 현재 감시 중인 디렉토리 목록
+// Maintain a list of watched directories and their watchers
 let watchedDirectories = [];
 let watchers = {};
 
-// 파일 이름을 정규화하는 함수
+// Function to load watched directories from the database
+function loadWatchedDirectoriesFromDB() {
+  return new Promise((resolve, reject) => {
+    db.all(`SELECT path FROM directories`, [], (err, rows) => {
+      if (err) {
+        log(`Failed to load directories from DB: ${err}`).catch(console.error);
+        return reject(err);
+      }
+
+      watchedDirectories = rows.map((row) => row.path);
+      watchedDirectories.forEach((dirPath) => watchDirectory(dirPath));
+      log("Loaded watched directories from the database.").catch(console.error);
+      resolve();
+    });
+  });
+}
+
+// Function to add a directory to the database
+function addDirectoryToDB(dirPath) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO directories (path) VALUES (?)`,
+      [dirPath],
+      function (err) {
+        if (err) {
+          log(`Failed to add directory to DB: ${err}`).catch(console.error);
+          return reject(err);
+        }
+        log(`Added directory to DB: "${dirPath}"`).catch(console.error);
+        resolve();
+      }
+    );
+  });
+}
+
+// Function to remove a directory from the database
+function removeDirectoryFromDB(dirPath) {
+  return new Promise((resolve, reject) => {
+    db.run(`DELETE FROM directories WHERE path = ?`, [dirPath], function (err) {
+      if (err) {
+        log(`Failed to remove directory from DB: ${err}`).catch(console.error);
+        return reject(err);
+      }
+      log(`Removed directory from DB: "${dirPath}"`).catch(console.error);
+      resolve();
+    });
+  });
+}
+
+// Function to normalize file names
 async function normalizeFileName(filePath) {
   const dir = path.dirname(filePath);
   const oldName = path.basename(filePath);
@@ -45,29 +128,29 @@ async function normalizeFileName(filePath) {
     const newPath = path.join(dir, newName);
     try {
       await fs.rename(filePath, newPath);
-      await log(`이름 변경: "${oldName}" -> "${newName}"`);
+      await log(`Renamed: "${oldName}" -> "${newName}"`);
 
-      // 알림 생성
+      // Show notification
       new Notification({
-        title: "이름 변경 완료",
-        body: `"${oldName}"이 "${newName}"으로 변경되었습니다.`,
+        title: "Rename Successful",
+        body: `"${oldName}" has been renamed to "${newName}".`,
       }).show();
 
-      // 렌더러 프로세스로 알림 전송
+      // Send log message to renderer
       if (mainWindow) {
         mainWindow.webContents.send(
           "log-message",
-          `이름 변경: "${oldName}" -> "${newName}"`
+          `Renamed: "${oldName}" -> "${newName}"`
         );
       }
 
       return newPath;
     } catch (error) {
-      await log(`이름 변경 실패 ("${oldName}"): ${error}`);
+      await log(`Failed to rename "${oldName}": ${error}`);
       if (mainWindow) {
         mainWindow.webContents.send(
           "log-message",
-          `이름 변경 실패 ("${oldName}"): ${error}`
+          `Failed to rename "${oldName}": ${error}`
         );
       }
       return filePath;
@@ -77,14 +160,14 @@ async function normalizeFileName(filePath) {
   return filePath;
 }
 
-// 디렉토리를 재귀적으로 처리하는 함수
+// Function to process a directory recursively
 async function processDirectory(dirPath) {
   try {
-    await log(`디렉토리 처리 시작: "${dirPath}"`);
+    await log(`Processing directory: "${dirPath}"`);
     if (mainWindow) {
       mainWindow.webContents.send(
         "log-message",
-        `디렉토리 처리 시작: "${dirPath}"`
+        `Processing directory: "${dirPath}"`
       );
     }
 
@@ -101,32 +184,116 @@ async function processDirectory(dirPath) {
         await normalizeFileName(fullPath);
       }
     }
+
     await normalizeFileName(dirPath);
-    await log(`디렉토리 처리 완료: "${dirPath}"`);
+    await log(`Finished processing directory: "${dirPath}"`);
     if (mainWindow) {
       mainWindow.webContents.send(
         "log-message",
-        `디렉토리 처리 완료: "${dirPath}"`
+        `Finished processing directory: "${dirPath}"`
       );
     }
   } catch (error) {
-    await log(`디렉토리 처리 중 오류 발생 ("${dirPath}"): ${error}`);
+    await log(`Error processing directory "${dirPath}": ${error}`);
     if (mainWindow) {
       mainWindow.webContents.send(
         "log-message",
-        `디렉토리 처리 중 오류 발생 ("${dirPath}"): ${error}`
+        `Error processing directory "${dirPath}": ${error}`
       );
     }
   }
 }
 
-// 창을 생성하는 함수
+// Function to watch a directory
+function watchDirectory(directory) {
+  const watcher = chokidar.watch(directory, {
+    ignored: (pathStr) => {
+      const baseName = path.basename(pathStr);
+      return shouldIgnore(baseName);
+    },
+    persistent: true,
+    ignoreInitial: false,
+    awaitWriteFinish: {
+      stabilityThreshold: 200,
+      pollInterval: 100,
+    },
+    depth: Infinity,
+  });
+
+  watchers[directory] = watcher;
+
+  watcher
+    .on("add", async (filePath) => {
+      await log(`File added: "${filePath}"`);
+      if (mainWindow) {
+        mainWindow.webContents.send("log-message", `File added: "${filePath}"`);
+      }
+      await normalizeFileName(filePath);
+    })
+    .on("change", async (filePath) => {
+      await log(`File changed: "${filePath}"`);
+      if (mainWindow) {
+        mainWindow.webContents.send(
+          "log-message",
+          `File changed: "${filePath}"`
+        );
+      }
+      await normalizeFileName(filePath);
+    })
+    .on("unlink", async (filePath) => {
+      await log(`File removed: "${filePath}"`);
+      if (mainWindow) {
+        mainWindow.webContents.send(
+          "log-message",
+          `File removed: "${filePath}"`
+        );
+      }
+    })
+    .on("addDir", async (dirPath) => {
+      await log(`Directory added: "${dirPath}"`);
+      if (mainWindow) {
+        mainWindow.webContents.send(
+          "log-message",
+          `Directory added: "${dirPath}"`
+        );
+      }
+      await processDirectory(dirPath);
+    })
+    .on("unlinkDir", async (dirPath) => {
+      await log(`Directory removed: "${dirPath}"`);
+      if (mainWindow) {
+        mainWindow.webContents.send(
+          "log-message",
+          `Directory removed: "${dirPath}"`
+        );
+      }
+    })
+    .on("error", async (error) => {
+      await log(`Watcher error: ${error}`);
+      if (mainWindow) {
+        mainWindow.webContents.send("log-message", `Watcher error: ${error}`);
+      }
+    })
+    .on("ready", () => {
+      log(
+        `Initial scan complete. Watching for changes in "${directory}".`
+      ).catch(console.error);
+      if (mainWindow) {
+        mainWindow.webContents.send(
+          "log-message",
+          `Initial scan complete. Watching for changes in "${directory}".`
+        );
+      }
+    });
+}
+
+// Function to create the application window
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 600,
     height: 500,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"), // 보안상 추천
+      preload: path.join(__dirname, "preload.js"), // Recommended for security
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -134,7 +301,7 @@ function createWindow() {
 
   mainWindow.loadFile("index.html");
 
-  // 개발자 도구 열기 (배포 시 제거 권장)
+  // Open DevTools for debugging (remove in production)
   // mainWindow.webContents.openDevTools();
 
   mainWindow.on("closed", function () {
@@ -142,13 +309,13 @@ function createWindow() {
   });
 }
 
-// 트레이 메뉴 설정
+// Function to set up the system tray
 function setTray() {
-  tray = new Tray(path.join(__dirname, "icon.png")); // 메뉴 바 아이콘 경로 (.png 또는 .icns)
+  tray = new Tray(path.join(__dirname, "icon.png")); // Ensure 'icon.png' exists in your project directory
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: "열기",
+      label: "Open",
       click: () => {
         if (mainWindow === null) {
           createWindow();
@@ -158,7 +325,7 @@ function setTray() {
       },
     },
     {
-      label: "종료",
+      label: "Quit",
       click: () => {
         app.quit();
       },
@@ -168,7 +335,7 @@ function setTray() {
   tray.setToolTip("Directory Watcher App");
   tray.setContextMenu(contextMenu);
 
-  // 더블 클릭 시 창 열기
+  // Double-click to open the window
   tray.on("double-click", () => {
     if (mainWindow === null) {
       createWindow();
@@ -178,22 +345,23 @@ function setTray() {
   });
 }
 
-// 애플리케이션 준비 시 창 및 트레이 설정
-app.whenReady().then(() => {
+// Function to initialize the application
+app.whenReady().then(async () => {
   createWindow();
   setTray();
+  await loadWatchedDirectoriesFromDB();
 
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-// 모든 창이 닫히면 애플리케이션 종료
+// Quit the app when all windows are closed (except on macOS)
 app.on("window-all-closed", function () {
   if (process.platform !== "darwin") app.quit();
 });
 
-// 디렉토리 감시 로직 처리
+// Handle selecting directories
 ipcMain.handle("select-directories", async () => {
   const result = await dialog.showOpenDialog({
     properties: ["openDirectory", "multiSelections"],
@@ -203,129 +371,58 @@ ipcMain.handle("select-directories", async () => {
     return { canceled: true };
   } else {
     const selectedPaths = result.filePaths;
-    console.log(`선택된 디렉토리: ${selectedPaths.join(", ")}`);
-    await log(`선택된 디렉토리: "${selectedPaths.join('", "')}"`);
+    console.log(`Selected directories: ${selectedPaths.join(", ")}`);
+    await log(`Selected directories: "${selectedPaths.join('", "')}"`);
     if (mainWindow) {
       mainWindow.webContents.send(
         "log-message",
-        `선택된 디렉토리: "${selectedPaths.join('", "')}"`
+        `Selected directories: "${selectedPaths.join('", "')}"`
       );
     }
 
     for (const selectedPath of selectedPaths) {
       if (!watchedDirectories.includes(selectedPath)) {
         watchedDirectories.push(selectedPath);
-        await processDirectory(selectedPath);
-
-        // chokidar watcher 설정
-        const watcher = chokidar.watch(selectedPath, {
-          ignored: (pathStr) => {
-            const baseName = path.basename(pathStr);
-            return shouldIgnore(baseName);
-          },
-          persistent: true,
-          ignoreInitial: false,
-          awaitWriteFinish: {
-            stabilityThreshold: 200,
-            pollInterval: 100,
-          },
-          depth: Infinity,
-        });
-
-        watchers[selectedPath] = watcher;
-
-        watcher
-          .on("add", async (filePath) => {
-            await log(`파일 추가됨: "${filePath}"`);
-            if (mainWindow) {
-              mainWindow.webContents.send(
-                "log-message",
-                `파일 추가됨: "${filePath}"`
-              );
-            }
-            await normalizeFileName(filePath);
-          })
-          .on("change", async (filePath) => {
-            await log(`파일 변경됨: "${filePath}"`);
-            if (mainWindow) {
-              mainWindow.webContents.send(
-                "log-message",
-                `파일 변경됨: "${filePath}"`
-              );
-            }
-            await normalizeFileName(filePath);
-          })
-          .on("unlink", async (filePath) => {
-            await log(`파일 삭제됨: "${filePath}"`);
-            if (mainWindow) {
-              mainWindow.webContents.send(
-                "log-message",
-                `파일 삭제됨: "${filePath}"`
-              );
-            }
-          })
-          .on("addDir", async (dirPath) => {
-            await log(`디렉토리 추가됨: "${dirPath}"`);
-            if (mainWindow) {
-              mainWindow.webContents.send(
-                "log-message",
-                `디렉토리 추가됨: "${dirPath}"`
-              );
-            }
-            await processDirectory(dirPath);
-          })
-          .on("unlinkDir", async (dirPath) => {
-            await log(`디렉토리 삭제됨: "${dirPath}"`);
-            if (mainWindow) {
-              mainWindow.webContents.send(
-                "log-message",
-                `디렉토리 삭제됨: "${dirPath}"`
-              );
-            }
-          })
-          .on("error", async (error) => {
-            await log(`Watcher error: ${error}`);
-            if (mainWindow) {
-              mainWindow.webContents.send(
-                "log-message",
-                `Watcher error: ${error}`
-              );
-            }
-          })
-          .on("ready", () => {
-            log("초기 스캔 완료. 변경 감시 중...");
-            if (mainWindow) {
-              mainWindow.webContents.send(
-                "log-message",
-                "초기 스캔 완료. 변경 감시 중..."
-              );
-            }
-          });
+        watchDirectory(selectedPath);
+        await addDirectoryToDB(selectedPath);
       }
     }
 
-    // 반환값으로 선택된 경로들을 전달
     return { canceled: false, paths: selectedPaths };
   }
 });
 
-// 디렉토리 제거 핸들러
+// Handle removing a directory
 ipcMain.handle("remove-directory", async (event, dirPath) => {
   if (watchedDirectories.includes(dirPath)) {
     watchedDirectories = watchedDirectories.filter((path) => path !== dirPath);
     if (watchers[dirPath]) {
       await watchers[dirPath].close();
       delete watchers[dirPath];
-      await log(`디렉토리 감시 중지: "${dirPath}"`);
+      await log(`Stopped watching directory: "${dirPath}"`);
       if (mainWindow) {
         mainWindow.webContents.send(
           "log-message",
-          `디렉토리 감시 중지: "${dirPath}"`
+          `Stopped watching directory: "${dirPath}"`
         );
       }
     }
+
+    await removeDirectoryFromDB(dirPath);
+
     return { success: true };
   } else {
-    return { success: false, message: "디렉토리가 감시 목록에 없습니다." };
+    return { success: false, message: "Directory is not in the watch list." };
   }
+});
+
+// Close the database connection when quitting the app
+app.on("before-quit", () => {
+  db.close((err) => {
+    if (err) {
+      console.error("Failed to close the database:", err);
+    } else {
+      console.log("Database connection closed.");
+    }
+  });
 });

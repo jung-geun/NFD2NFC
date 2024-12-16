@@ -65,16 +65,16 @@
 </head>
 
 <body>
-  <h1>디렉토리 감시 애플리케이션</h1>
-  <button id="select-directory">디렉토리 선택</button>
+  <h1>Directory Watcher Application</h1>
+  <button id="select-directory">Select Directories</button>
   <div id="selected-directories">
-    <h2>감시 중인 디렉토리</h2>
+    <h2>Watched Directories</h2>
     <div id="directories-list">
-      <!-- 선택된 디렉토리 목록이 여기에 표시됩니다 -->
+      <!-- Selected directories will appear here -->
     </div>
   </div>
   <div id="log">
-    로그가 여기에 표시됩니다.
+    Logs will appear here.
   </div>
 
   <script>
@@ -82,19 +82,9 @@
     const directoriesList = document.getElementById('directories-list');
     const logDiv = document.getElementById('log');
 
-    // 디렉토리 선택 버튼 클릭 시
-    selectDirButton.addEventListener('click', async () => {
-      const result = await window.electronAPI.selectDirectories();
-      if (!result.canceled) {
-        for (const path of result.paths) {
-          addDirectoryToList(path);
-        }
-      }
-    });
-
-    // 디렉토리를 목록에 추가하는 함수
+    // Function to add a directory to the list in the UI
     function addDirectoryToList(dirPath) {
-      // 이미 목록에 있는 경우 중복 추가 방지
+      // Avoid adding duplicates
       if (document.querySelector(`[data-path="${ dirPath }"]`)) {
         return;
       }
@@ -109,14 +99,14 @@
 
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-button';
-      removeBtn.textContent = '제거';
+      removeBtn.textContent = 'Remove';
       removeBtn.addEventListener('click', async () => {
         const response = await window.electronAPI.removeDirectory(dirPath);
         if (response.success) {
           directoriesList.removeChild(directoryItem);
-          appendLog(`디렉토리 감시 중지: "${ dirPath }"`);
+          appendLog(`Stopped watching directory: "${ dirPath }"`);
         } else {
-          appendLog(`디렉토리 제거 실패: "${ response.message }"`);
+          appendLog(`Failed to remove directory: "${ response.message }"`);
         }
       });
 
@@ -125,13 +115,23 @@
       directoriesList.appendChild(directoryItem);
     }
 
-    // 로그 메시지를 로그 섹션에 추가하는 함수
+    // Function to append log messages to the log div
     function appendLog(message) {
       logDiv.textContent += `${ message }\n`;
-      logDiv.scrollTop = logDiv.scrollHeight; // 자동 스크롤
+      logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to the bottom
     }
 
-    // 로그 메시지 수신 시
+    // Event listener for the "Select Directories" button
+    selectDirButton.addEventListener('click', async () => {
+      const result = await window.electronAPI.selectDirectories();
+      if (!result.canceled) {
+        for (const path of result.paths) {
+          addDirectoryToList(path);
+        }
+      }
+    });
+
+    // Listen for log messages from the main process
     window.electronAPI.onLog((message) => {
       appendLog(message);
     });
