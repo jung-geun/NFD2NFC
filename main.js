@@ -11,114 +11,77 @@ const {
 const path = require("path");
 const chokidar = require("chokidar");
 const fs = require("fs").promises;
-const sqlite3 = require("sqlite3").verbose(); // Ensure sqlite3 is required
+const fsSync = require("fs"); // For synchronous path checks
 
 let tray = null;
 let mainWindow = null;
+let watchers = {}; // To keep track of file watchers
 
-// Log file path
+// 로그 파일 경로 지정
 const logFilePath = path.join(app.getPath("userData"), "watcher.log");
 
-// SQLite database path
-const dbPath = path.join(app.getPath("userData"), "directories.db");
+// JSON 파일 경로 지정
+const watchedDirectoriesPath = path.join(
+  app.getPath("userData"),
+  "watchedDirectories.json"
+);
 
-// Initialize and connect to the SQLite database
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error("Failed to connect to the SQLite database:", err);
-  } else {
-    console.log("Connected to the SQLite database.");
-  }
-});
+// 현재 감시 중인 디렉토리 목록 및 마지막 갱신 시간
+let watchedDirectories = {}; // { "path/to/dir": "2024-12-16T23:30:25.615Z", ... }
 
-// Create the directories table if it doesn't exist
-db.serialize(() => {
-  db.run(
-    `
-    CREATE TABLE IF NOT EXISTS directories (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      path TEXT NOT NULL UNIQUE
-    )
-  `,
-    (err) => {
-      if (err) {
-        console.error("Failed to create directories table:", err);
-      }
+// Load the directories from JSON
+async function loadWatchedDirectories() {
+  try {
+    const data = await fs.readFile(watchedDirectoriesPath, "utf-8");
+    watchedDirectories = JSON.parse(data);
+    for (const dirPath of Object.keys(watchedDirectories)) {
+      watchDirectory(dirPath);
     }
-  );
-});
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error(`Error loading directories: ${error}`);
+      new Notification({
+        title: "Error",
+        body: `Error loading directories: ${error.message}`,
+      }).show();
+    } else {
+      console.log("No watched directories found. Starting fresh.");
+      watchedDirectories = {};
+    }
+  }
+}
 
-// Function to log messages to the log file
+// Save directories to JSON
+async function saveWatchedDirectories() {
+  try {
+    await fs.writeFile(
+      watchedDirectoriesPath,
+      JSON.stringify(watchedDirectories, null, 2),
+      "utf-8"
+    );
+  } catch (error) {
+    console.error(`Error saving directories: ${error}`);
+  }
+}
+
+// 로그 기록 함수
 async function log(message) {
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${message}\n`;
   try {
     await fs.appendFile(logFilePath, logMessage);
   } catch (error) {
-    console.error("Failed to write to log file:", error);
+    console.error("로그 파일 작성 실패:", error);
   }
 }
 
-// Function to determine if a file/directory should be ignored
+// 무시할 파일/디렉토리를 결정하는 함수
 function shouldIgnore(itemName) {
   const ignoredItems = [".git", "node_modules", ".env"];
   return ignoredItems.includes(itemName);
 }
 
-// Maintain a list of watched directories and their watchers
-let watchedDirectories = [];
-let watchers = {};
-
-// Function to load watched directories from the database
-function loadWatchedDirectoriesFromDB() {
-  return new Promise((resolve, reject) => {
-    db.all(`SELECT path FROM directories`, [], (err, rows) => {
-      if (err) {
-        log(`Failed to load directories from DB: ${err}`).catch(console.error);
-        return reject(err);
-      }
-
-      watchedDirectories = rows.map((row) => row.path);
-      watchedDirectories.forEach((dirPath) => watchDirectory(dirPath));
-      log("Loaded watched directories from the database.").catch(console.error);
-      resolve();
-    });
-  });
-}
-
-// Function to add a directory to the database
-function addDirectoryToDB(dirPath) {
-  return new Promise((resolve, reject) => {
-    db.run(
-      `INSERT INTO directories (path) VALUES (?)`,
-      [dirPath],
-      function (err) {
-        if (err) {
-          log(`Failed to add directory to DB: ${err}`).catch(console.error);
-          return reject(err);
-        }
-        log(`Added directory to DB: "${dirPath}"`).catch(console.error);
-        resolve();
-      }
-    );
-  });
-}
-
-// Function to remove a directory from the database
-function removeDirectoryFromDB(dirPath) {
-  return new Promise((resolve, reject) => {
-    db.run(`DELETE FROM directories WHERE path = ?`, [dirPath], function (err) {
-      if (err) {
-        log(`Failed to remove directory from DB: ${err}`).catch(console.error);
-        return reject(err);
-      }
-      log(`Removed directory from DB: "${dirPath}"`).catch(console.error);
-      resolve();
-    });
-  });
-}
-
-// Function to normalize file names
+// 파일 이름을 정규화하는 함수
 async function normalizeFileName(filePath) {
   const dir = path.dirname(filePath);
   const oldName = path.basename(filePath);
@@ -128,46 +91,52 @@ async function normalizeFileName(filePath) {
     const newPath = path.join(dir, newName);
     try {
       await fs.rename(filePath, newPath);
-      await log(`Renamed: "${oldName}" -> "${newName}"`);
+      // watchedDirectories[newPath] = new Date().toISOString();
+      // delete watchedDirectories[filePath];
+      await saveWatchedDirectories();
+      await log(`이름 변경: "${oldName}" -> "${newName}"`);
 
-      // Show notification
+      // 알림 생성
       new Notification({
-        title: "Rename Successful",
-        body: `"${oldName}" has been renamed to "${newName}".`,
+        title: "이름 변경 완료",
+        body: `"${oldName}"이 "${newName}"으로 변경되었습니다.`,
       }).show();
 
-      // Send log message to renderer
+      // 렌더러 프로세스로 알림 전송
       if (mainWindow) {
         mainWindow.webContents.send(
           "log-message",
-          `Renamed: "${oldName}" -> "${newName}"`
+          `이름 변경: "${oldName}" -> "${newName}"`
         );
       }
 
       return newPath;
     } catch (error) {
-      await log(`Failed to rename "${oldName}": ${error}`);
+      await log(`이름 변경 실패 ("${oldName}"): ${error}`);
       if (mainWindow) {
         mainWindow.webContents.send(
           "log-message",
-          `Failed to rename "${oldName}": ${error}`
+          `이름 변경 실패 ("${oldName}"): ${error}`
         );
       }
       return filePath;
     }
   }
 
+  // 변경 시 마지막 갱신 시간 업데이트
+  // watchedDirectories[filePath] = new Date().toISOString();
+  // await saveWatchedDirectories();
   return filePath;
 }
 
-// Function to process a directory recursively
+// 디렉토리를 재귀적으로 처리하는 함수
 async function processDirectory(dirPath) {
   try {
-    await log(`Processing directory: "${dirPath}"`);
+    await log(`디렉토리 처리 시작: "${dirPath}"`);
     if (mainWindow) {
       mainWindow.webContents.send(
         "log-message",
-        `Processing directory: "${dirPath}"`
+        `디렉토리 처리 시작: "${dirPath}"`
       );
     }
 
@@ -186,25 +155,28 @@ async function processDirectory(dirPath) {
     }
 
     await normalizeFileName(dirPath);
-    await log(`Finished processing directory: "${dirPath}"`);
+    // console.log(`디렉토리 처리 완료: "${dirPath}"`);
+    // watchedDirectories[dirPath] = new Date().toISOString();
+    // await saveWatchedDirectories();
+    await log(`디렉토리 처리 완료: "${dirPath}"`);
     if (mainWindow) {
       mainWindow.webContents.send(
         "log-message",
-        `Finished processing directory: "${dirPath}"`
+        `디렉토리 처리 완료: "${dirPath}"`
       );
     }
   } catch (error) {
-    await log(`Error processing directory "${dirPath}": ${error}`);
+    await log(`디렉토리 처리 중 오류 발생 ("${dirPath}"): ${error}`);
     if (mainWindow) {
       mainWindow.webContents.send(
         "log-message",
-        `Error processing directory "${dirPath}": ${error}`
+        `디렉토리 처리 중 오류 발생 ("${dirPath}"): ${error}`
       );
     }
   }
 }
 
-// Function to watch a directory
+// 디렉토리를 감시하는 함수
 function watchDirectory(directory) {
   const watcher = chokidar.watch(directory, {
     ignored: (pathStr) => {
@@ -224,76 +196,83 @@ function watchDirectory(directory) {
 
   watcher
     .on("add", async (filePath) => {
-      await log(`File added: "${filePath}"`);
-      if (mainWindow) {
-        mainWindow.webContents.send("log-message", `File added: "${filePath}"`);
-      }
+      // await log(`파일 추가됨: "${filePath}"`);
+      // if (mainWindow) {
+      //   mainWindow.webContents.send(
+      //     "log-message",
+      //     `파일 추가됨: "${filePath}"`
+      //   );
+      // }
       await normalizeFileName(filePath);
     })
     .on("change", async (filePath) => {
-      await log(`File changed: "${filePath}"`);
-      if (mainWindow) {
-        mainWindow.webContents.send(
-          "log-message",
-          `File changed: "${filePath}"`
-        );
-      }
+      // await log(`파일 변경됨: "${filePath}"`);
+      // if (mainWindow) {
+      //   mainWindow.webContents.send(
+      //     "log-message",
+      //     `파일 변경됨: "${filePath}"`
+      //   );
+      // }
       await normalizeFileName(filePath);
     })
     .on("unlink", async (filePath) => {
-      await log(`File removed: "${filePath}"`);
-      if (mainWindow) {
-        mainWindow.webContents.send(
-          "log-message",
-          `File removed: "${filePath}"`
-        );
-      }
+      // await log(`파일 삭제됨: "${filePath}"`);
+      // if (mainWindow) {
+      //   mainWindow.webContents.send(
+      //     "log-message",
+      //     `파일 삭제됨: "${filePath}"`
+      //   );
+      // }
     })
     .on("addDir", async (dirPath) => {
-      await log(`Directory added: "${dirPath}"`);
-      if (mainWindow) {
-        mainWindow.webContents.send(
-          "log-message",
-          `Directory added: "${dirPath}"`
-        );
-      }
+      // await log(`디렉토리 추가됨: "${dirPath}"`);
+      // if (mainWindow) {
+      //   mainWindow.webContents.send(
+      //     "log-message",
+      //     `디렉토리 추가됨: "${dirPath}"`
+      //   );
+      // }
       await processDirectory(dirPath);
     })
     .on("unlinkDir", async (dirPath) => {
-      await log(`Directory removed: "${dirPath}"`);
-      if (mainWindow) {
-        mainWindow.webContents.send(
-          "log-message",
-          `Directory removed: "${dirPath}"`
-        );
-      }
+      // await log(`디렉토리 삭제됨: "${dirPath}"`);
+      // if (mainWindow) {
+      //   mainWindow.webContents.send(
+      //     "log-message",
+      //     `디렉토리 삭제됨: "${dirPath}"`
+      //   );
+      // }
     })
     .on("error", async (error) => {
       await log(`Watcher error: ${error}`);
       if (mainWindow) {
         mainWindow.webContents.send("log-message", `Watcher error: ${error}`);
       }
+      new Notification({
+        title: "Watcher Error",
+        body: `Error watching directory: ${error.message}`,
+      }).show();
     })
     .on("ready", () => {
       log(
-        `Initial scan complete. Watching for changes in "${directory}".`
+        `초기 스캔 완료. "${directory}"에서 변경 사항을 감시 중입니다.`
       ).catch(console.error);
       if (mainWindow) {
         mainWindow.webContents.send(
           "log-message",
-          `Initial scan complete. Watching for changes in "${directory}".`
+          `초기 스캔 완료. "${directory}"에서 변경 사항을 감시 중입니다.`
         );
       }
     });
 }
 
-// Function to create the application window
+// 창을 생성하는 함수
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 600,
-    height: 500,
+    width: 550, // 너비 조정
+    height: 600, // 높이 조정
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"), // Recommended for security
+      preload: path.join(__dirname, "preload.js"), // 보안상 추천
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -301,21 +280,31 @@ function createWindow() {
 
   mainWindow.loadFile("index.html");
 
-  // Open DevTools for debugging (remove in production)
-  // mainWindow.webContents.openDevTools();
+  // 개발자 도구 열기 (배포 시 제거 권장)
+  mainWindow.webContents.openDevTools();
 
   mainWindow.on("closed", function () {
     mainWindow = null;
   });
 }
 
-// Function to set up the system tray
 function setTray() {
-  tray = new Tray(path.join(__dirname, "icon.png")); // Ensure 'icon.png' exists in your project directory
+  const iconPath = path.join(__dirname, "build/Macicon.iconset/icon_32x32.png"); // Define iconPath here
+
+  if (!fsSync.existsSync(iconPath)) {
+    console.error("Tray icon not found at:", iconPath);
+    new Notification({
+      title: "Error",
+      body: `Tray icon not found at ${iconPath}`,
+    }).show();
+    return;
+  }
+
+  tray = new Tray(iconPath);
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: "Open",
+      label: "열기",
       click: () => {
         if (mainWindow === null) {
           createWindow();
@@ -325,7 +314,7 @@ function setTray() {
       },
     },
     {
-      label: "Quit",
+      label: "종료",
       click: () => {
         app.quit();
       },
@@ -335,7 +324,7 @@ function setTray() {
   tray.setToolTip("Directory Watcher App");
   tray.setContextMenu(contextMenu);
 
-  // Double-click to open the window
+  // 더블 클릭 시 창 열기
   tray.on("double-click", () => {
     if (mainWindow === null) {
       createWindow();
@@ -345,23 +334,23 @@ function setTray() {
   });
 }
 
-// Function to initialize the application
+// 애플리케이션 준비 시 창 및 트레이 설정 후 디렉토리 목록 로드
 app.whenReady().then(async () => {
   createWindow();
   setTray();
-  await loadWatchedDirectoriesFromDB();
+  await loadWatchedDirectories();
 
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-// Quit the app when all windows are closed (except on macOS)
+// 모든 창이 닫히면 애플리케이션 종료 (macOS 특성)
 app.on("window-all-closed", function () {
   if (process.platform !== "darwin") app.quit();
 });
 
-// Handle selecting directories
+// 디렉토리 감시 로직 처리
 ipcMain.handle("select-directories", async () => {
   const result = await dialog.showOpenDialog({
     properties: ["openDirectory", "multiSelections"],
@@ -371,58 +360,65 @@ ipcMain.handle("select-directories", async () => {
     return { canceled: true };
   } else {
     const selectedPaths = result.filePaths;
-    console.log(`Selected directories: ${selectedPaths.join(", ")}`);
-    await log(`Selected directories: "${selectedPaths.join('", "')}"`);
+    await log(`선택된 디렉토리: "${selectedPaths.join('", "')}"`);
     if (mainWindow) {
       mainWindow.webContents.send(
         "log-message",
-        `Selected directories: "${selectedPaths.join('", "')}"`
+        `선택된 디렉토리: "${selectedPaths.join('", "')}"`
       );
     }
 
     for (const selectedPath of selectedPaths) {
-      if (!watchedDirectories.includes(selectedPath)) {
-        watchedDirectories.push(selectedPath);
+      if (!watchedDirectories.hasOwnProperty(selectedPath)) {
+        watchedDirectories[selectedPath] = new Date().toISOString();
         watchDirectory(selectedPath);
-        await addDirectoryToDB(selectedPath);
       }
+    }
+
+    await saveWatchedDirectories();
+
+    // 렌더러 프로세스로 선택된 디렉토리 목록 업데이트 요청
+    if (mainWindow) {
+      mainWindow.webContents.send("update-directories", watchedDirectories);
     }
 
     return { canceled: false, paths: selectedPaths };
   }
 });
 
-// Handle removing a directory
+// 디렉토리 제거 핸들러
 ipcMain.handle("remove-directory", async (event, dirPath) => {
-  if (watchedDirectories.includes(dirPath)) {
-    watchedDirectories = watchedDirectories.filter((path) => path !== dirPath);
+  if (watchedDirectories.hasOwnProperty(dirPath)) {
+    watchedDirectories = Object.keys(watchedDirectories)
+      .filter((key) => key !== dirPath)
+      .reduce((obj, key) => {
+        obj[key] = watchedDirectories[key];
+        return obj;
+      }, {});
     if (watchers[dirPath]) {
       await watchers[dirPath].close();
       delete watchers[dirPath];
-      await log(`Stopped watching directory: "${dirPath}"`);
+      await log(`디렉토리 감시 중지: "${dirPath}"`);
       if (mainWindow) {
         mainWindow.webContents.send(
           "log-message",
-          `Stopped watching directory: "${dirPath}"`
+          `디렉토리 감시 중지: "${dirPath}"`
         );
+        mainWindow.webContents.send("update-directories", watchedDirectories);
       }
     }
 
-    await removeDirectoryFromDB(dirPath);
+    await saveWatchedDirectories();
 
     return { success: true };
   } else {
-    return { success: false, message: "Directory is not in the watch list." };
+    return { success: false, message: "디렉토리가 감시 목록에 없습니다." };
   }
 });
 
-// Close the database connection when quitting the app
-app.on("before-quit", () => {
-  db.close((err) => {
-    if (err) {
-      console.error("Failed to close the database:", err);
-    } else {
-      console.log("Database connection closed.");
-    }
-  });
+process.on("unhandledRejection", (reason, promise) => {
+  new Notification({
+    title: "Unhandled Promise Rejection",
+    body: reason.message || "Unknown error",
+  }).show();
 });
