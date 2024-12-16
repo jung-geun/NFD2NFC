@@ -9,18 +9,57 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      padding: 50px;
+      padding: 20px;
     }
 
-    #selected-directory {
+    #selected-directories {
       margin-top: 20px;
+      text-align: left;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .directory-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .directory-path {
       word-break: break-all;
+    }
+
+    .remove-button {
+      background-color: #ff4d4d;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    #log {
+      margin-top: 20px;
+      text-align: left;
+      white-space: pre-wrap;
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-radius: 5px;
+      height: 200px;
+      overflow-y: scroll;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     button {
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -28,19 +67,73 @@
 <body>
   <h1>디렉토리 감시 애플리케이션</h1>
   <button id="select-directory">디렉토리 선택</button>
-  <div id="selected-directory">선택된 디렉토리 없음</div>
+  <div id="selected-directories">
+    <h2>감시 중인 디렉토리</h2>
+    <div id="directories-list">
+      <!-- 선택된 디렉토리 목록이 여기에 표시됩니다 -->
+    </div>
+  </div>
+  <div id="log">
+    로그가 여기에 표시됩니다.
+  </div>
 
   <script>
     const selectDirButton = document.getElementById('select-directory');
-    const selectedDirDiv = document.getElementById('selected-directory');
+    const directoriesList = document.getElementById('directories-list');
+    const logDiv = document.getElementById('log');
 
+    // 디렉토리 선택 버튼 클릭 시
     selectDirButton.addEventListener('click', async () => {
-      const result = await window.electronAPI.selectDirectory();
+      const result = await window.electronAPI.selectDirectories();
       if (!result.canceled) {
-        selectedDirDiv.textContent = `선택된 디렉토리: ${ result.path }`;
-      } else {
-        selectedDirDiv.textContent = '디렉토리 선택이 취소되었습니다.';
+        for (const path of result.paths) {
+          addDirectoryToList(path);
+        }
       }
+    });
+
+    // 디렉토리를 목록에 추가하는 함수
+    function addDirectoryToList(dirPath) {
+      // 이미 목록에 있는 경우 중복 추가 방지
+      if (document.querySelector(`[data-path="${ dirPath }"]`)) {
+        return;
+      }
+
+      const directoryItem = document.createElement('div');
+      directoryItem.className = 'directory-item';
+      directoryItem.setAttribute('data-path', dirPath);
+
+      const pathSpan = document.createElement('span');
+      pathSpan.className = 'directory-path';
+      pathSpan.textContent = dirPath;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-button';
+      removeBtn.textContent = '제거';
+      removeBtn.addEventListener('click', async () => {
+        const response = await window.electronAPI.removeDirectory(dirPath);
+        if (response.success) {
+          directoriesList.removeChild(directoryItem);
+          appendLog(`디렉토리 감시 중지: "${ dirPath }"`);
+        } else {
+          appendLog(`디렉토리 제거 실패: "${ response.message }"`);
+        }
+      });
+
+      directoryItem.appendChild(pathSpan);
+      directoryItem.appendChild(removeBtn);
+      directoriesList.appendChild(directoryItem);
+    }
+
+    // 로그 메시지를 로그 섹션에 추가하는 함수
+    function appendLog(message) {
+      logDiv.textContent += `${ message }\n`;
+      logDiv.scrollTop = logDiv.scrollHeight; // 자동 스크롤
+    }
+
+    // 로그 메시지 수신 시
+    window.electronAPI.onLog((message) => {
+      appendLog(message);
     });
   </script>
 </body>
