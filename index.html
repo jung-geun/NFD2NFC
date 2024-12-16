@@ -77,7 +77,6 @@
       <thead>
         <tr>
           <th>디렉토리 경로</th>
-          <th>마지막 갱신 시간</th>
           <th>제거</th>
         </tr>
       </thead>
@@ -96,19 +95,14 @@
     const directoriesList = document.getElementById('directories-list');
     const logDiv = document.getElementById('log');
 
-    // 디렉토리 선택 버튼 클릭 시
     selectDirButton.addEventListener('click', async () => {
       const result = await window.electronAPI.selectDirectories();
       if (!result.canceled) {
-        for (const path of result.paths) {
-          addDirectoryToList(path, new Date().toISOString());
-        }
+        refreshDirectories(); // 즉시 갱신
       }
     });
 
-    // 디렉토리를 목록에 추가하는 함수
-    function addDirectoryToList(dirPath, lastUpdateTime) {
-      // 이미 목록에 있는 경우 중복 추가 방지
+    function addDirectoryToList(dirPath) {
       if (document.querySelector(`[data-path="${ dirPath }"]`)) {
         return;
       }
@@ -118,9 +112,6 @@
 
       const pathCell = document.createElement('td');
       pathCell.textContent = dirPath;
-
-      const timeCell = document.createElement('td');
-      timeCell.textContent = new Date(lastUpdateTime).toLocaleString();
 
       const removeCell = document.createElement('td');
       const removeBtn = document.createElement('button');
@@ -138,27 +129,34 @@
       removeCell.appendChild(removeBtn);
 
       directoryRow.appendChild(pathCell);
-      directoryRow.appendChild(timeCell);
       directoryRow.appendChild(removeCell);
       directoriesList.appendChild(directoryRow);
     }
 
-    // 로그 메시지를 로그 섹션에 추가하는 함수
-    function appendLog(message) {
-      logDiv.textContent += `${ message }\n`;
-      logDiv.scrollTop = logDiv.scrollHeight; // 자동 스크롤
+    function refreshDirectories() {
+      window.electronAPI.getDirectories().then((directories) => {
+        directoriesList.innerHTML = '';
+        for (const dirPath of Object.keys(directories)) {
+          addDirectoryToList(dirPath);
+        }
+      });
     }
 
-    // 디렉토리 목록 업데이트 이벤트 수신
-    window.electronAPI.onUpdateDirectories((directories) => {
-      // 기존 목록 초기화
-      directoriesList.innerHTML = '';
-      for (const [dirPath, lastUpdateTime] of Object.entries(directories)) {
-        addDirectoryToList(dirPath, lastUpdateTime);
-      }
+    window.addEventListener('DOMContentLoaded', () => {
+      // Initially load directories
+      refreshDirectories();
+      // Then refresh every 10 seconds
+      setInterval(refreshDirectories, 10000);
     });
 
-    // 로그 메시지 수신 시
+    // Listen for refresh-directories event
+    window.electronAPI.on('refresh-directories', refreshDirectories);
+
+    function appendLog(message) {
+      logDiv.textContent += `${ message }\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
     window.electronAPI.onLog((message) => {
       appendLog(message);
     });

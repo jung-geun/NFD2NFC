@@ -266,28 +266,6 @@ function watchDirectory(directory) {
     });
 }
 
-// 창을 생성하는 함수
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 550, // 너비 조정
-    height: 600, // 높이 조정
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"), // 보안상 추천
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-
-  mainWindow.loadFile("index.html");
-
-  // 개발자 도구 열기 (배포 시 제거 권장)
-  mainWindow.webContents.openDevTools();
-
-  mainWindow.on("closed", function () {
-    mainWindow = null;
-  });
-}
-
 function setTray() {
   const iconPath = path.join(__dirname, "build/Macicon.iconset/icon_32x32.png"); // Define iconPath here
 
@@ -416,9 +394,38 @@ ipcMain.handle("remove-directory", async (event, dirPath) => {
   }
 });
 
+ipcMain.handle("get-directories", async () => {
+  return watchedDirectories;
+});
+
 process.on("unhandledRejection", (reason, promise) => {
   new Notification({
     title: "Unhandled Promise Rejection",
     body: reason.message || "Unknown error",
   }).show();
 });
+
+// 창을 생성하는 함수
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 550, // 너비 조정
+    height: 550, // 높이 조정
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"), // 보안상 추천
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  mainWindow.loadFile("index.html");
+
+  // 개발자 도구 열기 (배포 시 제거 권장)
+  // mainWindow.webContents.openDevTools();
+  mainWindow.on("show", () => {
+    mainWindow.webContents.send("get-directories");
+  });
+
+  mainWindow.on("closed", function () {
+    mainWindow = null;
+  });
+}
