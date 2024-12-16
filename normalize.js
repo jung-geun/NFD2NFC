@@ -1,82 +1,108 @@
 const fs = require("fs").promises;
 const path = require("path");
+const chokidar = require("chokidar");
 
-// 특정 파일/디렉토리를 무시하는 기능 추가
+// 무시할 파일/디렉토리를 결정하는 함수
 function shouldIgnore(itemName) {
   const ignoredItems = [".git", "node_modules", ".env"];
   return ignoredItems.includes(itemName);
 }
 
+// 파일 이름을 정규화하는 함수
 async function normalizeFileName(filePath) {
   const dir = path.dirname(filePath);
   const oldName = path.basename(filePath);
-
   const newName = oldName.normalize("NFC");
+
+  // console.log(`정규화 시도: "${oldName}" -> "${newName}"`);
 
   if (oldName !== newName && !shouldIgnore(oldName)) {
     const newPath = path.join(dir, newName);
     try {
-      // 경로에 공백이 있을 경우를 대비해 이스케이프 처리
-      const escapedOldPath = filePath.replace(/ /g, "\\ ");
-      const escapedNewPath = newPath.replace(/ /g, "\\ ");
-      await fs.rename(escapedOldPath, escapedNewPath);
-      console.log(`이름 변경: "${oldName}" -> "${newName}"`);
+      await fs.rename(filePath, newPath);
+      // console.log(`이름 변경 성공: "${oldName}" -> "${newName}"`);
       return newPath;
     } catch (error) {
       console.error(`이름 변경 실패 ("${oldName}"):`, error);
       return filePath;
     }
+  } else {
+    // console.log(`정규화 필요 없음: "${oldName}"`);
   }
   return filePath;
 }
 
+// 디렉토리를 재귀적으로 처리하는 함수
 async function processDirectory(dirPath) {
+  // console.log(`디렉토리 처리 시작: "${dirPath}"`);
   try {
-    // 경로에 공백이 있을 경우를 대비해 이스케이프 처리
-    const escapedDirPath = dirPath.replace(/ /g, "\\ ");
-    const entries = await fs.readdir(escapedDirPath, { withFileTypes: true });
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
-    const items = entries.map((entry) => ({
-      name: entry.name,
-      fullPath: path.join(dirPath, entry.name),
-      isDirectory: entry.isDirectory(),
-    }));
-
-    for (const item of items) {
-      if (item.isDirectory) {
-        await processDirectory(item.fullPath);
-        await normalizeFileName(item.fullPath);
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      // console.log(`파일 처리 시작: "${fullPath}"`);
+      if (entry.isDirectory()) {
+        if (!shouldIgnore(entry.name)) {
+          await processDirectory(fullPath);
+          await normalizeFileName(fullPath);
+        }
       } else {
-        await normalizeFileName(item.fullPath);
+        await normalizeFileName(fullPath);
       }
+      // console.log(`파일 처리 완료: "${fullPath}"`);
     }
+    await normalizeFileName(dirPath);
+    // console.log(`디렉토리 처리 완료: "${dirPath}"`);
   } catch (error) {
     console.error(`디렉토리 처리 중 오류 발생 ("${dirPath}"):`, error);
   }
 }
 
-async function processRoot(rootPath) {
-  try {
-    // 경로에 공백이 있을 경우를 대비해 이스케이프 처리
-    const escapedRootPath = path.resolve(rootPath);
-    const stats = await fs.stat(escapedRootPath);
+// 디렉토리를 감시하는 함수
+function watchDirectory(directory) {
+  const watcher = chokidar.watch(directory, {
+    ignored: (pathStr) => {
+      const baseName = path.basename(pathStr);
+      return shouldIgnore(baseName);
+    },
+    persistent: true,
+    ignoreInitial: false, // 초기 파일 추가 이벤트를 감지
+    awaitWriteFinish: {
+      stabilityThreshold: 200, // 파일이 완전히 작성될 때까지 대기 (ms)
+      pollInterval: 100,
+    },
+    depth: Infinity, // 하위 디렉토리까지 감시
+  });
 
-    if (stats.isDirectory()) {
-      const normalizedRootPath = await normalizeFileName(rootPath);
-      await processDirectory(normalizedRootPath);
-    } else {
-      await normalizeFileName(rootPath);
-    }
-  } catch (error) {
-    console.error(`처리 중 오류 발생 ("${rootPath}"):`, error);
-  }
+  watcher
+    .on("add", async (filePath) => {
+      // console.log(`파일 추가됨: "${filePath}"`);
+      await normalizeFileName(filePath);
+    })
+    .on("change", async (filePath) => {
+      // console.log(`파일 변경됨: "${filePath}"`);
+      await normalizeFileName(filePath);
+    })
+    .on("unlink", (filePath) => {
+      // console.log(`파일 삭제됨: "${filePath}"`);
+    })
+    .on("addDir", async (dirPath) => {
+      // console.log(`디렉토리 추가됨: "${dirPath}"`);
+      await processDirectory(dirPath); // 새 디렉토리를 추가되자마자 처리
+    })
+    .on("unlinkDir", (dirPath) => {
+      // console.log(`디렉토리 삭제됨: "${dirPath}"`);
+    })
+    .on("error", (error) => console.error(`Watcher error: ${error}`))
+    .on("ready", () => {
+      console.log("초기 스캔 완료. 변경 감시 중...");
+    });
+
+  console.log(`감시 시작: "${directory}"`);
 }
 
 // 명령줄 인자로 경로를 받거나 기본값 사용
-// 경로에 공백이 있을 경우를 대비해 따옴표로 감싸진 경로도 처리
 const targetPath = process.argv[2] || "./convert";
 
-// 프로그램 실행
-processRoot(targetPath)
-  .then(() => console.log("모든 처리가 완료되었습니다."))
-  .catch((error) => console.error("프로그램 실행 중 오류 발생:", error));
+// 디렉토리 감시 시작
+watchDirectory(targetPath);
