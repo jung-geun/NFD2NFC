@@ -50,11 +50,19 @@ function shouldIgnore(itemName) {
   return ignoredItems.includes(itemName);
 }
 
+function normalizeToNFC(str) {
+  return str.normalize("NFC");
+}
+
+function normalizeToNFD(str) {
+  return str.normalize("NFD");
+}
+
 // Function to normalize file names
 async function normalizeFileName(filePath) {
   const dir = path.dirname(filePath);
   const oldName = path.basename(filePath);
-  const newName = oldName.normalize("NFC");
+  const newName = convertToNFC(oldName);
 
   if (oldName !== newName && !shouldIgnore(oldName)) {
     const newPath = path.join(dir, newName);
@@ -117,6 +125,14 @@ const progressBar = new cliProgress.SingleBar(
   },
   cliProgress.Presets.shades_classic
 );
+
+module.exports = {
+  processPath,
+  shouldIgnore,
+  normalizeToNFC,
+  normalizeToNFD,
+  normalizeFileName,
+};
 
 // Handle input: if no flags, assume first non-flag argument is a path
 const nonFlagArgs = args._;
