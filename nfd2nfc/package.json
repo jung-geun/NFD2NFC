@@ -1,0 +1,38 @@
+{
+  "name": "@pieroot/nfd2nfc",
+  "version": "1.0.0",
+  "main": "main.js",
+  "description": "Convert NFD to NFC",
+  "dependencies": {
+    "cli-progress": "^3.12.0",
+    "minimist": "^1.2.8"
+  },
+  "scripts": {
+    "build": "pkg normalize.js --target node16-macos-x64,node16-linux-x64,node16-win-x64 --output ./dist/NFD2NFC"
+  },
+  "bin": {
+    "nfd2nfc": "normalize.js"
+  },
+  "directories": {
+    "output": "dist"
+  },
+  "keywords": [
+    "NFD",
+    "NFC",
+    "Unicode",
+    "Normalization",
+    "macOS",
+    "Linux",
+    "korean"
+  ],
+  "author": "jung-geun <pieroot.02@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jung-geun/NFD2NFC.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jung-geun/NFD2NFC/issues"
+  },
+  "homepage": "https://github.com/jung-geun/NFD2NFC#readme"
+}
