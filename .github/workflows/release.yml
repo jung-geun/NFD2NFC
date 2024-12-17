@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+
+      - name: Install dependencies and build nfd2nfc
+        run: |
+          cd nfd2nfc
+          npm install
+          npm run build
+
+      - name: Install dependencies and build MACOS-APP
+        run: |
+          cd MACOS-APP
+          npm install
+          npm run build
+
+      - name: Upload NFD2NFC executable
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./nfd2nfc/dist/NFD2NFC-$(uname -s).zip
+          asset_name: NFD2NFC-$(uname -s).zip
+          asset_content_type: application/zip
+
+      - name: Upload MacOS .app
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./MACOS-APP/dist/*.app.zip
+          asset_name: MacApp.zip
+          asset_content_type: application/zip
+
+      - name: Upload MacOS .dmg
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./MACOS-APP/dist/*.dmg
+          asset_name: MacApp.dmg
+          asset_content_type: application/octet-stream
