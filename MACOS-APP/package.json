@@ -5,7 +5,7 @@
   "description": "Convert NFD to NFC",
   "dependencies": {
     "chokidar": "^4.0.1",
-    "electron": "^33.2.1",
+    "electron": "^39.8.5",
     "minimist": "^1.2.8",
     "readdirp": "^4.0.2"
   },
@@ -39,7 +39,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "electron": "^33.2.1",
+    "electron": "^39.8.5",
     "electron-installer-dmg": "^5.0.1",
     "electron-packager": "^17.1.2"
   },
