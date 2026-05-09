@@ -103,6 +103,7 @@
     "directories": {
       "buildResources": "resources",
       "output": "dist"
-    }
+    },
+    "publish": "never"
   }
 }
