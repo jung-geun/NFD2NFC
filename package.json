@@ -16,7 +16,8 @@
   "files": [
     "out/cli/**",
     "out/lib/**",
-    "resources/**",
+    "out/core/**",
+    "!out/core/__tests__/**",
     "README.md",
     "LICENSE"
   ],

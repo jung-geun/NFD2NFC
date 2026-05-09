@@ -3,7 +3,7 @@
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "node",
-    "outDir": "out/cli",
+    "outDir": "out",
     "rootDir": "src",
     "declaration": false,
     "types": ["node"]
