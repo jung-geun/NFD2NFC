@@ -23,10 +23,10 @@
   ],
   "scripts": {
     "dev": "electron-vite dev",
-    "build:app": "electron-vite build",
+    "build:app": "electron-vite build && electron-builder",
     "build:cli": "tsc --project tsconfig.cli.json",
     "build:lib": "tsc --project tsconfig.lib.json",
-    "build": "npm run build:app && npm run build:cli && npm run build:lib && electron-builder",
+    "build": "npm run build:cli && npm run build:lib && npm run build:app",
     "prepublishOnly": "npm run build:cli && npm run build:lib && chmod +x out/cli/index.js",
     "preview": "electron-vite preview",
     "test": "vitest run",
