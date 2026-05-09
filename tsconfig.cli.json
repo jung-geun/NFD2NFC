@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "out/cli",
+    "rootDir": "src",
+    "declaration": false,
+    "types": ["node"]
+  },
+  "include": ["src/core/**/*", "src/cli/**/*"]
+}
