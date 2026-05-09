@@ -1,83 +1,107 @@
 # NFD to NFC Normalizer
 
-이 애플리케이션은 백그라운드에서 선택한 디렉토리를 감시하고, NFD로 인코딩된 파일 이름을 자동으로 NFC 인코딩으로 변환합니다.
+macOS에서 한글 파일명이 NFD(자모 분해)로 저장되는 문제를 실시간으로 해결하는 트레이 앱 + CLI + Node.js 라이브러리 통합 패키지입니다.
 
-Nomalize는 macOS 용 애플리케이션과 Node.js 패키지로 제공됩니다. macOS 앱은 `MACOS-APP`에서 빌드 가능하며, Node.js 패키지는 `nfd2nfc`에서 빌드 가능하고 다음 명령어로 설치할 수 있습니다:
+> **Breaking Change (2.0.0)**: 단일 패키지 구조로 통합됐습니다. `MACOS-APP/`, `nfd2nfc/` 서브 패키지 구조는 제거됐습니다. CLI 명령이 `nfd2nfc file <path>` / `nfd2nfc dir <path>` 형태로 변경됐습니다.
 
-```bash
-npm install @pieroot/nfd2nfc
-```
+## 주요 기능
+
+- **실시간 감시**: 선택한 디렉토리를 chokidar로 감시하여 파일이 생기는 즉시 NFC로 자동 변환
+- **트레이 팝오버**: macOS 메뉴바에 상주, 좌클릭으로 300×400 팝오버 표시
+- **설정창**: 3탭 설정 화면 (감시 디렉토리 / Undo 기록 / 일반)
+- **Auto / Manual 모드**: Auto는 즉시 변환, Manual은 큐에 누적 후 직접 적용
+- **Undo 시스템**: 마지막 5초 배치 또는 개별 변환 되돌리기
+- **알림 배치**: 30초 간격으로 변환 건수를 묶어 알림 — 알림 폭주 방지
+- **APFS 정확 처리**: 같은 inode 비교로 normalization-insensitive 파일 시스템 올바르게 처리
+- **한글 자모 필터**: U+1100-11FF, U+A960-A97F, U+D7B0-D7FF 영역만 대상 (라틴 NFD는 무시)
 
 ## 설치
 
 ### macOS 애플리케이션
 
-`MACOS-APP` 디렉토리에서 빌드하여 설치하거나 [릴리즈 페이지]()에서 다운로드합니다.
+[릴리즈 페이지](https://github.com/jung-geun/NFD2NFC/releases)에서 `NFD2NFC-arm64.dmg` 또는 `NFD2NFC-x64.dmg`를 다운로드하거나 직접 빌드합니다.
 
-### Node.js 패키지
-
-npm을 통해 패키지를 설치합니다:
+### CLI (글로벌 설치)
 
 ```bash
-# 지역적으로 설치
-npm install @pieroot/nfd2nfc
-
-# 글로벌로 설치
 npm install -g @pieroot/nfd2nfc
+```
+
+### Node.js 라이브러리
+
+```bash
+npm install @pieroot/nfd2nfc
 ```
 
 ## 사용법
 
 ### macOS 애플리케이션
 
-애플리케이션을 실행하여 원하는 기능을 사용합니다.
-
+<!-- TODO: 새 트레이 UI 스크린샷 교체 -->
 ![애플리케이션 화면](./assets/start-app.png)
-디렉토리 선택 버튼을 클릭하여 디렉토리를 선택합니다.
+
+앱 실행 후 메뉴바 아이콘을 클릭하면 팝오버가 표시됩니다. 팝오버에서 디렉토리를 추가하거나 설정창을 열 수 있습니다.
 
 ![디렉토리 선택](./assets/select-directory.png)
-감시할 디렉토리를 선택합니다.
+
+감시할 디렉토리를 선택합니다. 추가된 디렉토리는 앱 재시작 시에도 유지됩니다.
 
 ### CLI
 
-CLI를 사용하여 변환할 문자열을 입력합니다:
-
 ```bash
-nfd2nfc [options] <path>
+# 디렉토리 변환 (재귀)
+nfd2nfc dir <path> --recursive
 
-# 옵션
-nfd2nfc -h # 도움말
-nfd2nfc -v # verbose 모드
+# 미리보기 (실제 변환 없음)
+nfd2nfc dir <path> --dry-run
+
+# 단일 파일 변환
+nfd2nfc file <path>
+
+# 경로 자동 감지 (파일/디렉토리 판별 후 처리)
+nfd2nfc <path>
+
+# 도움말
+nfd2nfc --help
 ```
 
-### Node.js 패키지
-
-패키지를 불러와서 사용합니다:
+### Node.js 라이브러리
 
 ```javascript
 const nfd2nfc = require("@pieroot/nfd2nfc");
 
-let str_nfc = nfd2nfc.normalizeToNFC("NFD로 인코딩된 문자열");
-let str_nfd = nfd2nfc.normalizeToNFD("NFC로 인코딩된 문자열");
+// v1 호환 — 단순 문자열 정규화
+const nfc = nfd2nfc.normalizeToNFC("NFD로 인코딩된 문자열");
+const nfd = nfd2nfc.normalizeToNFD("NFC로 인코딩된 문자열");
+
+// v2 신규 — 파일 시스템 API
+const { normalizeEntry, scan, shouldNormalize } = require("@pieroot/nfd2nfc");
+
+// 단일 파일/디렉토리 rename (APFS inode 처리 포함)
+const result = await normalizeEntry("/path/to/file", "file");
+// result.status: 'renamed' | 'skipped' | 'noop-same-inode' | 'collision'
+
+// 디렉토리 재귀 스캔 (깊이 역순 정렬)
+const entries = await scan("/path/to/dir", true);
 ```
 
-## 빌드 방법
+## 빌드
 
-- macOS 애플리케이션은 `MACOS-APP`에서 빌드할 수 있습니다.
+```bash
+npm install
 
-  ```bash
-  cd MACOS-APP
-  npm install
-  npm run build
-  ```
+# 개발 모드
+npm run dev
 
-- Node.js 패키지는 `nfd2nfc`에서 빌드 가능하며, 다음 명령어로 설치할 수 있습니다:
+# 전체 빌드 (앱 + CLI + 라이브러리 + DMG)
+npm run build
 
-  ```bash
-    cd nfd2nfc
-    npm install
-    npm run build
-  ```
+# 앱만 빌드
+npm run build:app
+
+# CLI만 빌드
+npm run build:cli
+```
 
 ## 기여
 
