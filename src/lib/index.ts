@@ -6,4 +6,6 @@ export const normalizeToNFD = (s: string): string => s.normalize('NFD');
 export { normalizeEntry } from '../core/normalizer';
 export { scan } from '../core/scanner';
 export { shouldNormalize } from '../core/filter';
-export type { RenameResult, FilterOptions, ScanEntry } from '../core/types';
+export type { FilterOptions } from '../core/filter';
+export type { ScanEntry } from '../core/scanner';
+export type { RenameResult } from '../core/types';

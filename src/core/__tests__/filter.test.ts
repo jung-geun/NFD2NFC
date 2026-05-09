@@ -43,7 +43,7 @@ describe('shouldNormalize', () => {
 
   it('파일명에 한글 자모 확장-A 범위 코드포인트가 있으면 → true', () => {
     // U+A960 Hangul Jamo Extended-A
-    const name = 'ꥠfile.txt'; // 확장-A 자모
+    const _name = 'ꥠfile.txt'; // 확장-A 자모
     // 이 코드포인트는 단독으로 NFC와 다른 NFD를 만들지는 않지만 filter 범위 테스트
     // shouldNormalize는 먼저 NFC 동일성 체크를 하므로, NFC!=원본인 경우에만 범위 체크함
     // 따라서 실제로 NFD인 상황을 만들기 위해 함께 한글 자모를 섞어 줌

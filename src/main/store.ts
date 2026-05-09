@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   startAtLogin: false,
   defaultMode: 'auto',
   notificationsEnabled: true,
+  notificationIntervalSecs: 30,
 };
 
 const DEFAULT_SCHEMA: AppSchema = {

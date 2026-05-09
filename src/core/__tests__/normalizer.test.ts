@@ -46,7 +46,7 @@ describe('normalizeEntry — file', () => {
 
   it('라틴 악센트 NFD → skipped (한글 필터)', async () => {
     // e + combining acute accent (é in NFD)
-    const nfdName = 'caféNFD.txt'; // 이미 NFC라 아래에서 직접 NFD로 만들기
+    const _nfdName = 'caféNFD.txt'; // 이미 NFC라 아래에서 직접 NFD로 만들기
     // 실제 NFD 문자열: NFC e('e') + combining acute U+0301
     const nfdReal = 'café.txt';
     const filePath = path.join(tmpDir, nfdReal);

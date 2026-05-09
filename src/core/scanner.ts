@@ -1,4 +1,4 @@
-import fs, { Dirent } from 'fs';
+import { Dirent } from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { shouldNormalize } from './filter';

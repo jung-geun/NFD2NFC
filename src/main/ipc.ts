@@ -2,7 +2,6 @@ import { ipcMain, dialog, app, BrowserWindow } from 'electron';
 import { randomUUID } from 'crypto';
 import { scan } from '../core/scanner';
 import { normalizeEntry } from '../core/normalizer';
-import { nanoid } from './nanoid';
 import * as store from './store';
 import * as watcher from './watcher';
 import type { WatchedDir, UndoEntry } from '../core/types';

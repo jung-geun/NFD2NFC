@@ -6,7 +6,7 @@ import { scan } from '../core/scanner';
 import { normalizeEntry } from '../core/normalizer';
 import type { RenameResult } from '../core/types';
 
-const argv = yargs(hideBin(process.argv))
+void yargs(hideBin(process.argv))
   .usage('Usage: $0 <command|path> [options]')
   .command(
     'file <path>',
@@ -34,7 +34,7 @@ const argv = yargs(hideBin(process.argv))
         .option('dry-run', { alias: 'n', describe: '실제 변환 없이 대상만 출력', type: 'boolean', default: false }),
     async (args) => {
       if (!args.path) {
-        yargs.showHelp();
+        console.error('경로를 지정해주세요. nfd2nfc --help 로 도움말을 확인하세요.');
         process.exit(1);
       }
       try {
