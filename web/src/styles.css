@@ -82,6 +82,8 @@ main {
 }
 
 .dropzone {
+  display: block;
+  width: 100%;
   border: 2px dashed var(--border);
   border-radius: 16px;
   padding: 64px 24px;
