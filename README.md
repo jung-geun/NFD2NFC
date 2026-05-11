@@ -2,6 +2,8 @@
 
 macOS에서 한글 파일명이 NFD(자모 분해)로 저장되는 문제를 실시간으로 해결하는 트레이 앱 + CLI + Node.js 라이브러리 통합 패키지입니다.
 
+> 🌐 **웹 버전**: Windows/Linux 사용자는 설치 없이 [https://jung-geun.github.io/NFD2NFC/](https://jung-geun.github.io/NFD2NFC/) 에 파일/폴더를 끌어다 놓으면 NFC 이름의 ZIP 으로 받을 수 있습니다.
+
 > **Breaking Change (2.0.0)**: 단일 패키지 구조로 통합됐습니다. `MACOS-APP/`, `nfd2nfc/` 서브 패키지 구조는 제거됐습니다. CLI 명령이 `nfd2nfc file <path>` / `nfd2nfc dir <path>` 형태로 변경됐습니다.
 
 ## 주요 기능
