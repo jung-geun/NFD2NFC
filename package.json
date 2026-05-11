@@ -1,6 +1,6 @@
 {
   "name": "@pieroot/nfd2nfc",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "macOS 한글 파일명 NFD→NFC 실시간 변환 트레이 앱 + CLI + 라이브러리",
   "main": "out/lib/index.js",
   "types": "out/lib/index.d.ts",

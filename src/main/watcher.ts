@@ -50,7 +50,6 @@ export async function startDir(dir: WatchedDir): Promise<void> {
     ignoreInitial: false,
     persistent: true,
     depth: dir.recursive ? undefined : 0,
-    awaitWriteFinish: { stabilityThreshold: 500, pollInterval: 100 },
     ignored: /(^|[/\\])\../,
   });
 
