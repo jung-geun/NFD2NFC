@@ -21,7 +21,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: npm run build:cli && npm run build:lib && npm run build:app -- --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 

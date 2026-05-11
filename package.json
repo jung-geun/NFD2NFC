@@ -104,6 +104,6 @@
       "buildResources": "resources",
       "output": "dist"
     },
-    "publish": "never"
+    "publish": null
   }
 }
