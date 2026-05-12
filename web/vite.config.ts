@@ -4,7 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   root: __dirname,
-  base: '/NFD2NFC/',
+  base: '/',
   plugins: [react()],
   build: {
     outDir: resolve(__dirname, '../dist-web'),
