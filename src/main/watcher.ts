@@ -12,6 +12,7 @@ type ActivityListener = (event: ActivityEvent) => void;
 
 const watchers = new Map<string, FSWatcher>();
 const recentlyRenamed = new Map<string, number>();
+const inFlight = new Set<string>();
 const RENAME_TTL = 2000;
 const listeners = new Set<ActivityListener>();
 const manualQueue = new Map<string, string[]>();
@@ -51,39 +52,51 @@ export async function startDir(dir: WatchedDir): Promise<void> {
     persistent: true,
     depth: dir.recursive ? undefined : 0,
     ignored: /(^|[/\\])\../,
+    awaitWriteFinish: { stabilityThreshold: 300, pollInterval: 100 },
   });
 
   async function handlePath(filePath: string, type: 'file' | 'directory'): Promise<void> {
     const now = Date.now();
-    const lastRenamed = recentlyRenamed.get(filePath);
+    const key = filePath.normalize('NFC');
+
+    // 동일 경로가 이미 처리 중이면 즉시 return (burst add 이벤트로 인한 race 차단)
+    if (inFlight.has(key)) return;
+    const lastRenamed = recentlyRenamed.get(key);
     if (lastRenamed && now - lastRenamed < RENAME_TTL) return;
 
     const basename = filePath.split('/').pop() ?? '';
     if (!shouldNormalize(basename, filterOpts)) return;
 
-    if (dir.mode === 'auto') {
-      const result = await normalizeEntry(filePath, type, filterOpts);
-      if (result.status === 'renamed' || result.status === 'noop-same-inode') {
-        recentlyRenamed.set(result.newPath, Date.now());
-        if (result.status === 'renamed') {
-          await store.appendUndoEntries([
-            { id: nanoid(), ts: now, oldPath: result.oldPath, newPath: result.newPath, reverted: false },
-          ]);
+    inFlight.add(key);
+    try {
+      if (dir.mode === 'auto') {
+        const result = await normalizeEntry(filePath, type, filterOpts);
+        if (result.status === 'renamed' || result.status === 'noop-same-inode') {
+          // oldPath와 newPath 모두 등록 — chokidar가 NFD/NFC 변형 중 어느 쪽으로 이벤트를 보내도 막힘
+          recentlyRenamed.set(result.oldPath.normalize('NFC'), Date.now());
+          recentlyRenamed.set(result.newPath.normalize('NFC'), Date.now());
+          if (result.status === 'renamed') {
+            await store.appendUndoEntries([
+              { id: nanoid(), ts: now, oldPath: result.oldPath, newPath: result.newPath, reverted: false },
+            ]);
+          }
+          emit({ type: 'rename', ts: now, dirId: dir.id, message: `${result.oldPath} → ${result.newPath}`, result });
+          // 알림은 배치로 처리 — 인터벌마다 총 건수 발송
+          await notifier.queueRenamedNotification(dir.path);
+        } else if (result.status === 'collision') {
+          emit({ type: 'collision', ts: now, dirId: dir.id, message: `충돌: ${result.oldPath}`, result });
         }
-        emit({ type: 'rename', ts: now, dirId: dir.id, message: `${result.oldPath} → ${result.newPath}`, result });
-        // 알림은 배치로 처리 — 인터벌마다 총 건수 발송
-        await notifier.queueRenamedNotification(dir.path);
-      } else if (result.status === 'collision') {
-        emit({ type: 'collision', ts: now, dirId: dir.id, message: `충돌: ${result.oldPath}`, result });
+      } else {
+        const queue = manualQueue.get(dir.id) ?? [];
+        if (!queue.includes(filePath)) {
+          queue.push(filePath);
+          manualQueue.set(dir.id, queue);
+          emit({ type: 'info', ts: now, dirId: dir.id, message: `수동 대기: ${filePath}` });
+        }
+        await notifier.notifyManualQueue(queue.length, dir.path);
       }
-    } else {
-      const queue = manualQueue.get(dir.id) ?? [];
-      if (!queue.includes(filePath)) {
-        queue.push(filePath);
-        manualQueue.set(dir.id, queue);
-        emit({ type: 'info', ts: now, dirId: dir.id, message: `수동 대기: ${filePath}` });
-      }
-      await notifier.notifyManualQueue(queue.length, dir.path);
+    } finally {
+      inFlight.delete(key);
     }
   }
 
@@ -147,7 +160,8 @@ export async function applyManualQueue(dirId: string, dir: WatchedDir): Promise<
       const result = await normalizeEntry(filePath, type, filterOpts);
       results.push(result);
       if (result.status === 'renamed') {
-        recentlyRenamed.set(result.newPath, Date.now());
+        recentlyRenamed.set(result.oldPath.normalize('NFC'), Date.now());
+        recentlyRenamed.set(result.newPath.normalize('NFC'), Date.now());
         undoEntries.push({ id: nanoid(), ts: now, oldPath: result.oldPath, newPath: result.newPath, reverted: false });
       }
     } catch (err) {
