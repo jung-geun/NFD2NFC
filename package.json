@@ -59,7 +59,7 @@
     "react-dom": "^19.2.6",
     "typescript": "^5.4.0",
     "vite": "^6.4.3",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.11"
   },
   "author": "jung-geun <pieroot.02@gmail.com>",
   "license": "MIT",
