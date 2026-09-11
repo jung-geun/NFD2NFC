@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "chokidar": "^3.6.0",
-    "fflate": "^0.8.2",
+    "fflate": "^0.8.3",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
