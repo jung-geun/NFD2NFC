@@ -50,7 +50,7 @@
     "@typescript-eslint/eslint-plugin": "^7.7.0",
     "@typescript-eslint/parser": "^7.7.0",
     "@vitejs/plugin-react": "^5.1.4",
-    "electron": "^39.8.5",
+    "electron": "^41.10.6",
     "electron-builder": "^26.15.3",
     "electron-vite": "^3.1.0",
     "eslint": "^8.57.0",
