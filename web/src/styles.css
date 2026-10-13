@@ -93,6 +93,47 @@ label {
   margin-bottom: 28px;
 }
 
+.site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 24px;
+}
+
+.site-nav nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.site-nav .site-name {
+  color: var(--fg);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.site-nav a:hover {
+  color: var(--accent);
+}
+
+header .tool-intro {
+  margin-top: 8px;
+  font-size: 0.875rem;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: var(--accent);
@@ -135,6 +176,115 @@ header .privacy-note {
 
 main {
   flex: 1;
+}
+
+#converter,
+.guide-section {
+  scroll-margin-top: 24px;
+}
+
+.guide-section {
+  margin-top: 40px;
+  border-top: 1px solid var(--border);
+  padding-top: 28px;
+  min-width: 0;
+}
+
+.guide-section h2 {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.guide-section p {
+  color: var(--muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.guide-section .eyebrow {
+  color: var(--accent);
+  font-size: 0.75rem;
+}
+
+.web-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.web-steps li {
+  padding-left: 4px;
+}
+
+.web-steps li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.web-steps h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.web-steps p {
+  margin: 8px 0 0;
+}
+
+.guide-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 12px;
+  color: var(--accent);
+  font-size: 0.875rem;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.cli-commands {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 20px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  background: var(--surface);
+  font-size: 0.8125rem;
+  line-height: 1.8;
+  tab-size: 2;
+}
+
+.cli-commands code,
+.guide-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.guide-section details {
+  border-top: 1px solid var(--border);
+}
+
+.guide-section summary {
+  padding: 14px 0;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.guide-section details p {
+  margin: 0 0 18px;
+}
+
+@media (max-width: 600px) {
+  .web-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
 }
 
 .dropzone {
@@ -714,6 +864,24 @@ footer a {
   align-items: center;
   color: var(--muted);
   text-underline-offset: 3px;
+}
+
+.privacy-disclosure {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  text-align: left;
+}
+
+.privacy-disclosure summary {
+  display: list-item;
+  min-height: 44px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.privacy-disclosure a {
+  display: inline;
 }
 
 @media (hover: hover) {
