@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, type ChangeEvent, type DragEvent, type MouseEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState, type ChangeEvent, type DragEvent, type MouseEvent, type RefObject } from 'react';
 import {
   collectFromDataTransfer,
   collectFromFileList,
@@ -265,22 +265,32 @@ export function App() {
   return (
     <div className="app">
       <header>
+        <div className="site-nav">
+          <a className="site-name" href="https://nfd2nfc.com/">NFD2NFC</a>
+          <nav aria-label="주요 메뉴">
+            <a href="#how-to-use">사용 방법</a>
+            <a href="#cli">CLI</a>
+            <a href="https://github.com/jung-geun/NFD2NFC" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+          </nav>
+        </div>
         <p className="eyebrow">한글 파일명, 어디서든 바르게</p>
         <h1>NFD → NFC 파일명 변환기</h1>
         <p>
-          macOS에서 만든 파일명이 다른 환경에서도 바르게 보이도록.
-          ZIP·파일·폴더를 선택하면 한글 이름을 NFC로 정리해 하나의 ZIP으로 돌려드립니다.
+          macOS 한글 파일명의 자소 분리(NFD)를 NFC로 정리하는 무료 도구입니다.
+          이 페이지에서 ZIP·파일·폴더를 선택하면 이름을 정리한 ZIP을 바로 받을 수 있습니다.
         </p>
+        <p className="tool-intro">설치 없이 웹에서 간단하게, 반복 작업이나 큰 폴더는 CLI를 설치해 로컬에서 실행하세요.</p>
         <p className="privacy-note">
           <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="4" y="8" width="12" height="9" rx="2" />
             <path d="M7 8V6a3 3 0 0 1 6 0v2M10 11v3" />
           </svg>
-          서버 업로드·브라우저 영구 저장 없이, 이 기기에서만 처리합니다.
+          파일 변환은 서버 업로드·브라우저 영구 저장 없이, 이 기기에서 처리합니다.
         </p>
       </header>
 
       <main>
+        <section id="converter" aria-label="파일명 변환">
         {state.kind === 'idle' ? (
           <IdleView
             dragActive={state.dragActive}
@@ -310,12 +320,78 @@ export function App() {
             )}
           </>
         )}
+        </section>
+
+        <section id="how-to-use" className="guide-section" aria-labelledby="web-guide-title">
+          <p className="eyebrow">웹에서 바로 실행</p>
+          <h2 id="web-guide-title">설치 없이, 세 단계면 끝납니다.</h2>
+          <ol className="web-steps">
+            <li>
+              <h3>ZIP·파일·폴더 선택</h3>
+              <p>위의 선택 버튼을 누르거나 파일과 폴더를 끌어다 놓으세요.</p>
+            </li>
+            <li>
+              <h3>한글 이름 자동 정리</h3>
+              <p>선택하면 변환이 바로 시작됩니다. ZIP을 풀고 폴더 구조를 유지해 NFC로 정리합니다.</p>
+            </li>
+            <li>
+              <h3>변환한 ZIP 다운로드</h3>
+              <p>완료 후 ZIP 다운로드를 누르세요. 원본은 그대로 두고 새 ZIP을 만듭니다.</p>
+            </li>
+          </ol>
+          <a className="guide-link" href="#converter">파일 선택 영역으로 이동 ↑</a>
+        </section>
+
+        <section id="cli" className="guide-section" aria-labelledby="cli-guide-title">
+          <p className="eyebrow">CLI로 로컬 실행</p>
+          <h2 id="cli-guide-title">반복 작업은 터미널에서.</h2>
+          <p>Git·Node.js·npm이 설치된 환경에서 GitHub 소스로 CLI를 설치하면 로컬 파일·폴더의 이름을 직접 정리할 수 있습니다.</p>
+          <pre className="cli-commands" aria-label="CLI 설치와 실행 명령"><code>{`git clone https://github.com/jung-geun/NFD2NFC.git
+cd NFD2NFC
+npm install
+npm run build:cli
+npm install -g .
+
+# 변경할 이름 먼저 확인 (하위 폴더 포함)
+nfd2nfc dir "./my-folder" --recursive --dry-run
+
+# 확인 후 실제 파일명 변경
+nfd2nfc dir "./my-folder" --recursive`}</code></pre>
+          <p className="guide-note"><code>./my-folder</code>를 원하는 폴더 경로로 바꾸세요. 웹 버전과 달리 CLI는 원본 이름을 변경하므로, 먼저 <code>--dry-run</code>으로 대상을 확인하세요.</p>
+          <a className="guide-link" href="https://github.com/jung-geun/NFD2NFC#cli" target="_blank" rel="noopener noreferrer">GitHub에서 소스와 전체 사용법 보기 ↗</a>
+        </section>
+
+        <section id="faq" className="guide-section" aria-labelledby="faq-title">
+          <h2 id="faq-title">자주 묻는 질문</h2>
+          <details>
+            <summary>NFD와 NFC는 무엇이 다른가요?</summary>
+            <p>NFD는 한글을 자모로 분리해 저장하고, NFC는 가능한 경우 완성형 문자로 합칩니다. 이 도구는 한글 NFD가 포함된 파일·폴더 이름을 정리하며, 문서 내용이나 모든 종류의 인코딩 오류를 고치는 도구는 아닙니다.</p>
+          </details>
+          <details>
+            <summary>원본 파일이나 내용이 바뀌나요?</summary>
+            <p>웹 버전은 원본 이름과 내용을 바꾸지 않고 새 ZIP을 만듭니다. CLI는 로컬 원본의 이름을 직접 변경합니다. 두 방식 모두 파일 내용은 변경하지 않습니다.</p>
+          </details>
+          <details>
+            <summary>큰 파일이나 폴더도 변환할 수 있나요?</summary>
+            <p>웹 버전은 선택한 파일 합계, ZIP 해제 후 합계, 생성 ZIP을 각각 {PROCESSING_LIMIT_LABEL}로 제한합니다. 더 큰 자료나 반복 작업에는 로컬 CLI 또는 macOS 앱을 이용하세요.</p>
+          </details>
+          <details>
+            <summary>변환한 파일은 어디에 보관되나요?</summary>
+            <p>파일은 이 기기에서 처리하며 브라우저 영구 저장소에 보관하지 않습니다. 변환 결과와 다운로드 링크는 {RESULT_LIFETIME_MS / 60_000}분 뒤 자동 해제됩니다. 기기에 다운로드한 파일은 직접 삭제해야 합니다.</p>
+          </details>
+        </section>
       </main>
 
       <footer>
         <p>파일 내용은 그대로, 한글 이름만 정리합니다.</p>
         <p>선택·압축 해제 후 파일 합계와 생성 ZIP은 각각 최대 {PROCESSING_LIMIT_LABEL}입니다.</p>
         <p>결과는 {RESULT_LIFETIME_MS / 60_000}분 뒤 자동 해제됩니다. 기기에 다운로드한 파일은 직접 삭제해주세요.</p>
+        <details id="privacy" className="privacy-disclosure">
+          <summary>개인정보 및 광고 안내</summary>
+          <p>변환 코드는 선택한 파일을 서버로 전송하지 않습니다. Google AdSense 광고는 별도로 외부 네트워크 요청을 보내며, Google과 광고 파트너는 쿠키·IP 주소·기기 정보 등을 광고 제공 및 측정에 사용할 수 있습니다.</p>
+          <p>광고 스크립트는 페이지와 같은 실행 환경을 공유합니다. 외부 스크립트 없이 민감한 파일을 처리하려면 로컬 CLI를 이용하세요.</p>
+          <p>광고 서비스의 데이터 처리는 <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">Google의 파트너 사이트 데이터 사용 안내</a>를 확인하세요.</p>
+        </details>
       </footer>
     </div>
   );
@@ -339,7 +415,10 @@ function IdleView(props: {
   inputRef: RefObject<HTMLInputElement | null>;
   errorRef: RefObject<HTMLDivElement | null>;
 }) {
-  const supportsFolderPicker = 'webkitdirectory' in document.createElement('input');
+  const [supportsFolderPicker, setSupportsFolderPicker] = useState(false);
+  useEffect(() => {
+    setSupportsFolderPicker('webkitdirectory' in document.createElement('input'));
+  }, []);
   return (
     <>
       <section
