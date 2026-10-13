@@ -92,7 +92,7 @@ function archive(entries: { name: Uint8Array; text: string; flags?: number; corr
   return new File(parts, 'fixture.zip', { type: 'application/zip' });
 }
 
-const collect = (file: File) => collectFromFileList([file] as unknown as FileList);
+const collect = (file: File) => collectFromFileList([file]);
 
 describe('browser archive compatibility', () => {
   it('preserves contents while canonicalizing Windows separators and Korean legacy names', async () => {
@@ -147,7 +147,7 @@ describe('browser archive compatibility', () => {
   it('round-trips a STORE archive without stream() and preserves zero-byte entries', async () => {
     const payload = new File(['real-bytes'], '한글.txt');
     Object.defineProperty(payload, 'stream', { value: undefined });
-    const result = await collectFromFileList([payload, new File([], 'zero.txt')] as unknown as FileList);
+    const result = await collectFromFileList([payload, new File([], 'zero.txt')]);
     const output = await buildZip(result.files);
     const unpacked = await collect(new File([output], 'output.zip'));
     expect(unpacked.files.map((file) => file.zipPath)).toEqual(['한글.txt', 'zero.txt']);

@@ -301,6 +301,19 @@ main {
   background: var(--soft-accent);
 }
 
+.dropzone.compact {
+  padding: 24px 20px;
+}
+
+.dropzone.compact .upload-graphic {
+  width: 64px;
+  margin-bottom: 12px;
+}
+
+.dropzone.compact .hint {
+  margin-top: 12px;
+}
+
 .upload-graphic {
   display: block;
   max-width: 100%;
@@ -444,7 +457,7 @@ button.link {
   stroke-linejoin: round;
 }
 
-.pipeline-graphic :is(.motion-orbit, .motion-archive, .motion-file, .motion-scan, .motion-glyphs, .motion-packed, .motion-link, .motion-check) {
+.pipeline-graphic :is(.motion-orbit, .motion-archive, .motion-file, .motion-scan, .motion-glyphs, .motion-packed, .motion-link) {
   opacity: 0;
   transform-box: fill-box;
   transform-origin: center;
@@ -473,9 +486,7 @@ button.link {
 .motion-stage[data-phase='extracting'] :is(.motion-archive, .motion-file),
 .motion-stage[data-phase='analyzing'] :is(.motion-file, .motion-scan, .motion-glyphs),
 .motion-stage[data-phase='compressing'] :is(.motion-file, .motion-packed),
-.motion-stage[data-phase='linking'] :is(.motion-packed, .motion-link),
-.motion-stage[data-phase='ready'] :is(.motion-packed, .motion-link, .motion-check),
-.motion-stage[data-phase='empty'] :is(.motion-file, .motion-check) {
+.motion-stage[data-phase='linking'] :is(.motion-packed, .motion-link) {
   opacity: 1;
 }
 
@@ -545,9 +556,6 @@ button.link {
   animation: link-create 1.4s ease-in-out infinite;
 }
 
-.motion-check {
-  color: var(--success-fg);
-}
 
 .pipeline-steps ol {
   display: grid;
@@ -637,9 +645,6 @@ button.link {
   color: var(--success-fg);
 }
 
-.pipeline-step[data-state='skipped'] .step-icon {
-  background: transparent;
-}
 
 .processing-detail {
   margin-top: 22px;
@@ -742,6 +747,67 @@ button.link {
 
 .result {
   margin-top: 16px;
+}
+
+.conversion-history {
+  margin-top: 32px;
+}
+
+.conversion-history > h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.conversion-history > .hint,
+.conversion-job > .hint {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.job-list {
+  display: grid;
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+}
+
+.job-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.job-heading > div {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.job-heading .eyebrow {
+  margin-bottom: 6px;
+}
+
+.job-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.result h4 {
+  margin: 0 0 12px;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.result > .hint {
+  font-size: 0.8125rem;
+  color: var(--muted);
 }
 
 .status h2 {

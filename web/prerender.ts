@@ -1,7 +1,6 @@
 import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { createServer, type Plugin } from 'vite';
-import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 export function prerender(): Plugin {
@@ -14,8 +13,10 @@ export function prerender(): Plugin {
         const server = await createServer({
           configFile: false,
           root: __dirname,
-          plugins: [react()],
+          esbuild: { jsx: 'automatic' },
           resolve: { alias: { '@core': resolve(__dirname, '../src') } },
+          // SSR loading needs no client pre-bundle that could race server.close().
+          optimizeDeps: { noDiscovery: true, include: [] },
           server: { middlewareMode: true, hmr: false },
           appType: 'custom',
         });

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { CollectProgress, CollectSummary } from './lib/collectFiles';
 
 export interface WorkflowProgress {
-  phase: CollectProgress['phase'] | 'compressing' | 'linking' | 'ready' | 'empty';
+  phase: CollectProgress['phase'] | 'compressing' | 'linking';
   done: number;
   total?: number;
   currentPath?: string;
@@ -32,14 +32,6 @@ const phaseCopy: Record<WorkflowProgress['phase'], { title: string; description:
     title: '다운로드 링크를 만들고 있어요',
     description: '완성된 ZIP을 이 브라우저에서 바로 받을 수 있도록 준비합니다.',
   },
-  ready: {
-    title: '파일 준비가 끝났어요',
-    description: '이름 분석부터 다운로드 준비까지, 모든 처리가 완료되었습니다.',
-  },
-  empty: {
-    title: '처리할 파일이 없어요',
-    description: '파일을 찾지 못해 ZIP 생성과 링크 생성을 건너뛰었습니다.',
-  },
 };
 
 const phaseIndex: Record<WorkflowProgress['phase'], number> = {
@@ -48,8 +40,6 @@ const phaseIndex: Record<WorkflowProgress['phase'], number> = {
   analyzing: 1,
   compressing: 2,
   linking: 3,
-  ready: 4,
-  empty: 2,
 };
 
 export function ProcessingPipeline({ progress, collected }: {
@@ -58,7 +48,6 @@ export function ProcessingPipeline({ progress, collected }: {
 }) {
   const { phase } = progress;
   const copy = phaseCopy[phase];
-  const complete = phase === 'ready' || phase === 'empty';
   const currentIndex = phaseIndex[phase];
   const changedFile = useMemo(() => collected?.files.find((file) => file.normalized), [collected]);
   const usesBytes = phase === 'compressing' && (progress.bytesTotal ?? 0) > 0;
@@ -81,7 +70,7 @@ export function ProcessingPipeline({ progress, collected }: {
       title: 'ZIP 압축',
       detail: collected ? `${collected.files.length.toLocaleString()}개 파일 묶기` : '폴더 구조 그대로',
     },
-    { title: '링크 생성', detail: phase === 'ready' ? '다운로드 준비 완료' : '내 기기에서 다운로드' },
+    { title: '링크 생성', detail: '내 기기에서 다운로드' },
   ];
 
   let counter: string;
@@ -94,7 +83,7 @@ export function ProcessingPipeline({ progress, collected }: {
   return (
     <section className="pipeline" data-phase={phase} aria-labelledby="workflow-title">
       <div className="pipeline-heading">
-        <p className="eyebrow">{complete ? '처리 결과' : '내 기기에서 처리 중'}</p>
+        <p className="eyebrow">내 기기에서 처리 중</p>
         <h2 id="workflow-title">{copy.title}</h2>
         <p>{copy.description}</p>
       </div>
@@ -105,10 +94,8 @@ export function ProcessingPipeline({ progress, collected }: {
       <div className="pipeline-steps">
       <ol aria-label="파일 처리 단계">
         {steps.map((step, index) => {
-          const status = phase === 'empty' && index >= 2
-            ? 'skipped'
-            : index < currentIndex ? 'done' : index === currentIndex ? 'active' : 'pending';
-          const statusLabel = { done: '완료', active: '진행 중', pending: '대기', skipped: '생략' }[status];
+          const status = index < currentIndex ? 'done' : index === currentIndex ? 'active' : 'pending';
+          const statusLabel = { done: '완료', active: '진행 중', pending: '대기' }[status];
           return (
             <li className="pipeline-step" data-state={status} key={index} aria-current={status === 'active' ? 'step' : undefined}>
               <StepIcon index={index} done={status === 'done'} />
@@ -119,7 +106,6 @@ export function ProcessingPipeline({ progress, collected }: {
         })}
       </ol>
       </div>
-      {!complete && (
         <div className="processing-detail">
           <div className="detail-row">
             <span>{counter}</span>
@@ -138,7 +124,6 @@ export function ProcessingPipeline({ progress, collected }: {
           </div>
           {progress.currentPath && <p className="current-file" title={progress.currentPath}>{progress.currentPath}</p>}
         </div>
-      )}
       {changedFile && (
         <div className="normalization-preview">
           <small>실제 파일명 정리 · NFD에서 NFC로</small>
@@ -203,10 +188,6 @@ function PipelineGraphic() {
       <g className="motion-link">
         <path d="M290 93h34" strokeDasharray="3 5" />
         <path d="m348 82 7-7a10 10 0 0 1 14 14l-7 7m-7 0-7 7a10 10 0 0 1-14-14l7-7m3 11 15-15" strokeWidth="2.5" fill="none" />
-      </g>
-      <g className="motion-check">
-        <circle cx="404" cy="93" r="17" />
-        <path d="m397 93 5 5 9-10" strokeWidth="2.5" fill="none" />
       </g>
     </svg>
   );

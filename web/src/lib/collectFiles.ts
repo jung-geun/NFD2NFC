@@ -37,8 +37,14 @@ export interface CollectProgress {
   archiveCount: number;
 }
 
+export interface ConversionInput {
+  name: string;
+  collect(onProgress?: (progress: CollectProgress) => void): Promise<CollectResult>;
+}
+
 type SourceFile = { path: string; file: File };
 type ProgressCallback = (progress: CollectProgress) => void;
+type DroppedRoot = { entry: FileSystemEntry | null; file: File | null };
 const BATCH_SIZE = 64;
 
 // A task boundary lets React commit and the browser paint, even without an active animation frame.
@@ -52,19 +58,25 @@ function isArchive(file: File): boolean {
   return /\.zip$/i.test(file.name) || /^(application\/zip|application\/x-zip-compressed)$/i.test(file.type);
 }
 
-/**
- * DataTransfer 에서 파일과 폴더를 모두 수집한다.
- * - 폴더는 webkitGetAsEntry 로 재귀 traversal.
- * - DirectoryReader.readEntries 는 Chromium 에서 호출당 최대 100 개만 반환 → 빈 배열 나올 때까지 루프.
- * - 각 path segment 를 독립적으로 NFC 정규화.
- * - 정규화 후 경로 충돌 시 -2, -3 ... suffix 로 회피.
- */
-export async function collectFromDataTransfer(
-  dt: DataTransfer,
-  onProgress?: ProgressCallback,
-): Promise<CollectResult> {
-  // The drag data store is protected after the drop handler returns. Capture BOTH APIs before yielding.
-  const roots: { entry: FileSystemEntry | null; file: File | null }[] = [];
+/** Capture native file handles before the caller resets the input; collection stays deferred. */
+export function captureFileInputs(files: FileList, directory: boolean): ConversionInput[] {
+  const snapshot = Array.from(files);
+  if (snapshot.length === 0) return [];
+  if (directory) {
+    const first = snapshot[0];
+    const name = first.webkitRelativePath.split('/')[0] || first.name;
+    return [fileInput(name, snapshot)];
+  }
+  return snapshot.map((file) => fileInput(file.name, [file]));
+}
+
+function fileInput(name: string, files: readonly File[]): ConversionInput {
+  return { name, collect: (onProgress) => collectFromFileList(files, onProgress) };
+}
+
+/** The drag data store becomes protected after the native drop handler returns. */
+export function captureDroppedInputs(dt: DataTransfer): ConversionInput[] {
+  const roots: DroppedRoot[] = [];
   for (let i = 0; i < dt.items.length; i++) {
     const item = dt.items[i];
     if (item.kind !== 'file') continue;
@@ -76,8 +88,22 @@ export async function collectFromDataTransfer(
   if (roots.length === 0) {
     for (const file of fallbackFiles) roots.push({ entry: null, file });
   }
+  return roots.map(droppedInput);
+}
 
-  const total = roots.some(({ entry }) => entry?.isDirectory) ? undefined : roots.length;
+function droppedInput(root: DroppedRoot): ConversionInput {
+  return {
+    name: root.entry?.name || root.file!.name,
+    collect: (onProgress) => collectDroppedRoot(root, onProgress),
+  };
+}
+
+/** A dropped directory is one conversion; its descendants share the existing resource budgets. */
+async function collectDroppedRoot(
+  { entry, file }: DroppedRoot,
+  onProgress?: ProgressCallback,
+): Promise<CollectResult> {
+  const total = entry?.isDirectory ? undefined : 1;
   const flat: SourceFile[] = [];
   let archiveCount = 0;
   let selectedBytes = 0;
@@ -96,12 +122,10 @@ export async function collectFromDataTransfer(
   };
   report();
   await yieldToBrowser();
-  for (const { entry, file } of roots) {
-    if (entry?.isDirectory || (entry && !file)) {
-      await walkEntry(entry, '', add);
-    } else if (file) {
-      await add({ path: file.webkitRelativePath || entry?.name || file.name, file });
-    }
+  if (entry?.isDirectory || (entry && !file)) {
+    await walkEntry(entry, '', add);
+  } else if (file) {
+    await add({ path: file.webkitRelativePath || entry?.name || file.name, file });
   }
   report(flat.at(-1)?.path);
   return prepareFiles(flat, archiveCount, onProgress);
@@ -111,7 +135,7 @@ export async function collectFromDataTransfer(
  * `<input type="file" webkitdirectory>` 또는 일반 input 에서 수집.
  */
 export async function collectFromFileList(
-  files: FileList,
+  files: FileList | readonly File[],
   onProgress?: ProgressCallback,
 ): Promise<CollectResult> {
   // File inputs can be reset by the caller as soon as this function returns its promise.

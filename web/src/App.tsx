@@ -1,266 +1,84 @@
-import { useCallback, useEffect, useReducer, useRef, useState, type ChangeEvent, type DragEvent, type MouseEvent, type RefObject } from 'react';
-import {
-  collectFromDataTransfer,
-  collectFromFileList,
-  type CollectProgress,
-  type CollectResult,
-  type CollectSummary,
-} from './lib/collectFiles';
-import { buildZip, type BuildProgress } from './lib/buildZip';
-import { ProcessingPipeline, type WorkflowProgress } from './ProcessingPipeline';
-import { deferred } from './lib/deferred';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent, type MouseEvent, type RefObject } from 'react';
+import { captureDroppedInputs, captureFileInputs } from './lib/collectFiles';
+import { ConversionQueue, type ConversionJob, type ConversionUpdate } from './lib/conversionQueue';
+import { ProcessingPipeline } from './ProcessingPipeline';
 import { PROCESSING_LIMIT_LABEL, RESULT_LIFETIME_MS } from './lib/resourcePolicy';
 
-type State =
-  | { kind: 'idle'; dragActive: boolean; error?: string; notice?: string }
-  | { kind: 'working'; progress: WorkflowProgress; collected?: CollectSummary }
-  | {
-      kind: 'ready';
-      progress: WorkflowProgress;
-      collected: CollectSummary;
-      zipBytes?: number;
-      downloadUrl?: string;
-      filename: string;
-      expiresAt: number;
-    };
-
-type Action =
-  | { type: 'drag'; active: boolean }
-  | { type: 'start' }
-  | { type: 'collect-progress'; progress: CollectProgress }
-  | { type: 'error'; message: string }
-  | { type: 'packing-start'; collected: CollectSummary }
-  | { type: 'build-progress'; progress: BuildProgress }
-  | { type: 'linking' }
-  | { type: 'ready'; collected: CollectSummary; zipBytes: number; downloadUrl: string; filename: string; expiresAt: number }
-  | { type: 'ready-empty'; collected: CollectSummary; filename: string; expiresAt: number }
-  | { type: 'reset' }
-  | { type: 'expire' };
-
-const initial: State = { kind: 'idle', dragActive: false };
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'drag':
-      return state.kind === 'idle' ? { ...state, dragActive: action.active } : state;
-    case 'start':
-      return { kind: 'working', progress: { phase: 'reading', done: 0, archiveCount: 0 } };
-    case 'collect-progress':
-      return state.kind === 'working' ? { ...state, progress: action.progress } : state;
-    case 'error':
-      return { kind: 'idle', dragActive: false, error: action.message };
-    case 'packing-start':
-      return {
-        kind: 'working',
-        collected: action.collected,
-        progress: {
-          phase: 'compressing',
-          done: 0,
-          total: action.collected.files.length,
-          archiveCount: action.collected.archiveCount,
-        },
-      };
-    case 'build-progress':
-      if (state.kind !== 'working') return state;
-      return { ...state, progress: { ...state.progress, ...action.progress, phase: 'compressing' } };
-    case 'linking':
-      if (state.kind !== 'working') return state;
-      return {
-        ...state,
-        progress: { phase: 'linking', done: 0, archiveCount: state.progress.archiveCount },
-      };
-    case 'ready':
-    case 'ready-empty':
-      return {
-        kind: 'ready',
-        collected: action.collected,
-        filename: action.filename,
-        expiresAt: action.expiresAt,
-        zipBytes: action.type === 'ready' ? action.zipBytes : undefined,
-        downloadUrl: action.type === 'ready' ? action.downloadUrl : undefined,
-        progress: {
-          phase: action.type === 'ready' ? 'ready' : 'empty',
-          done: action.collected.files.length,
-          total: action.collected.files.length,
-          archiveCount: action.collected.archiveCount,
-        },
-      };
-    case 'reset':
-      return initial;
-    case 'expire':
-      return { kind: 'idle', dragActive: false, notice: '결과 보관 시간이 지나 임시 파일과 다운로드 링크를 자동 해제했습니다. 파일을 다시 선택해주세요.' };
-  }
-}
-
-function timestamp(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(
-    d.getMinutes(),
-  )}${pad(d.getSeconds())}`;
-}
+const jobLabels: Record<ConversionJob['kind'], string> = {
+  queued: '대기 중', working: '처리 중', ready: '완료', error: '처리 실패', expired: '보관 시간 만료',
+};
 
 export function App() {
-  const [state, dispatch] = useReducer(reducer, initial);
-  const busy = useRef(false);
-  const restorePickerFocus = useRef(false);
-  const mounted = useRef(false);
-  const resultResource = useRef<{ downloadUrl?: string; expiresAt: number } | null>(null);
-  const delayedRevocations = useRef(new Map<string, number>());
+  const [jobs, setJobs] = useState<ConversionJob[]>([]);
+  const [dragActive, setDragActive] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
-  const resultHeading = useRef<HTMLHeadingElement>(null);
-  const errorMessage = useRef<HTMLDivElement>(null);
-  const expiresAt = state.kind === 'ready' ? state.expiresAt : undefined;
+  const queue = useRef<ConversionQueue | null>(null);
 
-  const releaseResult = useCallback((delay = 0) => {
-    if (!delay) {
-      for (const [url, timer] of delayedRevocations.current) {
-        window.clearTimeout(timer);
-        URL.revokeObjectURL(url);
-      }
-      delayedRevocations.current.clear();
-    }
-    const resource = resultResource.current;
-    resultResource.current = null;
-    if (!resource?.downloadUrl) return;
-    const url = resource.downloadUrl;
-    if (delay) {
-      const timer = window.setTimeout(() => {
-        delayedRevocations.current.delete(url);
-        URL.revokeObjectURL(url);
-      }, delay);
-      delayedRevocations.current.set(url, timer);
-    } else URL.revokeObjectURL(url);
+  const updateJob = useCallback((update: ConversionUpdate) => {
+    setJobs((current) => {
+      if (update.type === 'remove') return current.filter((job) => job.id !== update.id);
+      const index = current.findIndex((job) => job.id === update.job.id);
+      if (index === -1) return [...current, update.job];
+      const next = [...current];
+      next[index] = update.job;
+      return next;
+    });
   }, []);
 
-  const forgetResult = useCallback((reason: 'reset' | 'expire' | 'pagehide') => {
-    // Safari needs a brief grace period if reset immediately follows a download click.
-    releaseResult(reason === 'reset' ? 1_000 : 0);
-    restorePickerFocus.current = true;
-    dispatch({ type: reason === 'expire' ? 'expire' : 'reset' });
-  }, [releaseResult]);
-
   useEffect(() => {
-    mounted.current = true;
+    const controller = new ConversionQueue(updateJob);
+    queue.current = controller;
+    const checkExpiry = () => controller.checkExpiry();
     const onPageHide = () => {
-      if (resultResource.current) forgetResult('pagehide');
-      else releaseResult();
+      controller.clear();
+      setDragActive(false);
     };
-    window.addEventListener('pagehide', onPageHide);
-    return () => {
-      mounted.current = false;
-      window.removeEventListener('pagehide', onPageHide);
-      releaseResult();
-    };
-  }, [releaseResult, forgetResult]);
-
-  useEffect(() => {
-    if (expiresAt === undefined) return;
-    const checkExpiry = () => {
-      if (resultResource.current?.expiresAt === expiresAt && Date.now() >= expiresAt) forgetResult('expire');
-    };
-    const timer = window.setTimeout(checkExpiry, Math.max(0, expiresAt - Date.now()));
-    // Background tabs may suspend timers. Recheck the absolute deadline on return.
     document.addEventListener('visibilitychange', checkExpiry);
     window.addEventListener('focus', checkExpiry);
     window.addEventListener('pageshow', checkExpiry);
+    window.addEventListener('pagehide', onPageHide);
     return () => {
-      window.clearTimeout(timer);
+      queue.current = null;
       document.removeEventListener('visibilitychange', checkExpiry);
       window.removeEventListener('focus', checkExpiry);
       window.removeEventListener('pageshow', checkExpiry);
+      window.removeEventListener('pagehide', onPageHide);
+      controller.dispose();
     };
-  }, [expiresAt, forgetResult]);
+  }, [updateJob]);
 
-  const handleDownload = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
-    if (!resultResource.current || Date.now() >= resultResource.current.expiresAt) {
-      event.preventDefault();
-      forgetResult('expire');
-    }
-  }, [forgetResult]);
-
-  const error = state.kind === 'idle' ? state.error : undefined;
-  useEffect(() => {
-    if (state.kind === 'ready') resultHeading.current?.focus();
-    if (error) errorMessage.current?.focus();
-    if (state.kind === 'idle' && restorePickerFocus.current) {
-      fileInput.current?.focus();
-      restorePickerFocus.current = false;
-    }
-  }, [state.kind, error]);
-
-  const reportCollection = useCallback((progress: CollectProgress) => {
-    dispatch({ type: 'collect-progress', progress });
+  const handleDrop = useCallback((event: DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragActive(false);
+    // Native drop handles must be captured before the event's data store is protected.
+    queue.current?.enqueue(captureDroppedInputs(event.dataTransfer));
   }, []);
 
-  const run = useCallback(async (collect: () => Promise<CollectResult>) => {
-    if (busy.current) return;
-    busy.current = true;
-    dispatch({ type: 'start' });
-    try {
-      // Call synchronously: drag-and-drop handles must be captured during the drop event.
-      const collected = await collect();
-      if (!mounted.current) return;
-      const summary: CollectSummary = {
-        ...collected,
-        files: collected.files.map(({ zipPath, originalPath, normalized }) => ({ zipPath, originalPath, normalized })),
-      };
-      const filename = `nfc-${timestamp()}.zip`;
-      if (collected.files.length === 0) {
-        const expiresAt = Date.now() + RESULT_LIFETIME_MS;
-        resultResource.current = { expiresAt };
-        dispatch({ type: 'ready-empty', collected: summary, filename, expiresAt });
-        return;
-      }
-      dispatch({ type: 'packing-start', collected: summary });
-      await allowPaint();
-      const blob = await buildZip(collected.files, (progress) => {
-        dispatch({ type: 'build-progress', progress });
-      });
-      dispatch({ type: 'linking' });
-      await allowPaint();
-      if (!mounted.current) return;
-      const downloadUrl = URL.createObjectURL(blob);
-      const expiresAt = Date.now() + RESULT_LIFETIME_MS;
-      resultResource.current = { downloadUrl, expiresAt };
-      dispatch({ type: 'ready', collected: summary, zipBytes: blob.size, downloadUrl, filename, expiresAt });
-    } catch (e) {
-      dispatch({
-        type: 'error',
-        message: e instanceof Error ? e.message : '파일 처리 중 오류가 발생했습니다. 다시 선택해주세요.',
-      });
-    } finally {
-      busy.current = false;
-    }
-  }, []);
-
-  const handleDrop = useCallback((ev: DragEvent<HTMLElement>) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    if (state.kind !== 'idle' || busy.current) return;
-    const transfer = ev.dataTransfer;
-    void run(() => collectFromDataTransfer(transfer, reportCollection));
-  }, [run, reportCollection, state.kind]);
-
-  const handleFileInput = useCallback((ev: ChangeEvent<HTMLInputElement>) => {
-    const input = ev.currentTarget;
-    const files = input.files;
-    if (!files?.length || state.kind !== 'idle' || busy.current) return;
-    // Collection snapshots File handles synchronously; do not retain them in the input.
-    void run(() => collectFromFileList(files, reportCollection));
+  const handleFileInput = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    if (!input.files?.length) return;
+    const inputs = captureFileInputs(input.files, input.hasAttribute('webkitdirectory'));
     input.value = '';
-  }, [run, reportCollection, state.kind]);
+    queue.current?.enqueue(inputs);
+  }, []);
 
-  const onDragOver = (ev: DragEvent<HTMLElement>) => {
-    ev.preventDefault();
-    if (state.kind === 'idle') dispatch({ type: 'drag', active: true });
+  const onDragOver = (event: DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    setDragActive(true);
   };
-  const onDragLeave = (ev: DragEvent<HTMLElement>) => {
-    ev.preventDefault();
-    if (ev.relatedTarget instanceof Node && ev.currentTarget.contains(ev.relatedTarget)) return;
-    if (state.kind === 'idle') dispatch({ type: 'drag', active: false });
+  const onDragLeave = (event: DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+    setDragActive(false);
   };
-  const reset = () => forgetResult('reset');
+  const handleDownload = (id: number, event: MouseEvent<HTMLAnchorElement>) => {
+    if (!queue.current?.canDownload(id)) event.preventDefault();
+  };
+  const removeJob = (id: number) => {
+    queue.current?.remove(id);
+    fileInput.current?.focus();
+  };
 
   return (
     <div className="app">
@@ -291,35 +109,41 @@ export function App() {
 
       <main>
         <section id="converter" aria-label="파일명 변환">
-        {state.kind === 'idle' ? (
-          <IdleView
-            dragActive={state.dragActive}
-            error={state.error}
-            notice={state.notice}
+          <PickerView
+            dragActive={dragActive}
+            hasJobs={jobs.length > 0}
             onDrop={handleDrop}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onFileInput={handleFileInput}
             inputRef={fileInput}
-            errorRef={errorMessage}
           />
-        ) : (
-          <>
-            <ProcessingPipeline progress={state.progress} collected={state.collected} />
-            {state.kind === 'ready' && (
-              <ReadyView
-                collected={state.collected}
-                zipBytes={state.zipBytes}
-                downloadUrl={state.downloadUrl}
-                filename={state.filename}
-                expiresAt={state.expiresAt}
-                onDownload={handleDownload}
-                headingRef={resultHeading}
-                onReset={reset}
-              />
-            )}
-          </>
-        )}
+          {jobs.length > 0 && (
+            <section className="conversion-history" aria-labelledby="jobs-title">
+              <h2 id="jobs-title">변환 내역</h2>
+              <p className="hint">파일을 계속 추가할 수 있습니다. 완료된 항목은 각각 다운로드하세요.</p>
+              <ol className="job-list">
+                {jobs.map((job) => (
+                  <li className="conversion-job status" data-job-id={job.id} data-kind={job.kind} key={job.id} aria-labelledby={`job-title-${job.id}`}>
+                    <div className="job-heading">
+                      <div>
+                        <p className="eyebrow">변환 {job.id} · {jobLabels[job.kind]}</p>
+                        <h3 id={`job-title-${job.id}`}>{job.name}</h3>
+                      </div>
+                      {job.kind !== 'queued' && job.kind !== 'working' && (
+                        <button className="link" aria-label={`${job.name} 결과 삭제`} onClick={() => removeJob(job.id)}>결과 삭제</button>
+                      )}
+                    </div>
+                    {job.kind === 'queued' && <p className="hint" role="status">앞선 항목의 변환이 끝나면 자동으로 시작합니다.</p>}
+                    {job.kind === 'working' && <ProcessingPipeline progress={job.progress} collected={job.collected} />}
+                    {job.kind === 'ready' && <ReadyView job={job} onDownload={(event) => handleDownload(job.id, event)} />}
+                    {job.kind === 'error' && <p className="error" role="alert">{job.message}</p>}
+                    {job.kind === 'expired' && <p className="hint" role="status">이 결과의 {RESULT_LIFETIME_MS / 60_000}분 보관 시간이 지나 다운로드 링크를 해제했습니다. 필요하면 파일을 다시 추가하세요.</p>}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
         </section>
 
         <section id="how-to-use" className="guide-section" aria-labelledby="web-guide-title">
@@ -332,11 +156,11 @@ export function App() {
             </li>
             <li>
               <h3>한글 이름 자동 정리</h3>
-              <p>선택하면 변환이 바로 시작됩니다. ZIP을 풀고 폴더 구조를 유지해 NFC로 정리합니다.</p>
+              <p>각 항목을 추가한 순서대로 NFC로 정리합니다. 처리 중에도 파일을 계속 추가할 수 있습니다.</p>
             </li>
             <li>
               <h3>변환한 ZIP 다운로드</h3>
-              <p>완료 후 ZIP 다운로드를 누르세요. 원본은 그대로 두고 새 ZIP을 만듭니다.</p>
+              <p>완료된 항목마다 ZIP 다운로드를 누르세요. 파일·ZIP은 각각, 폴더는 구조를 유지한 ZIP 하나로 받을 수 있습니다.</p>
             </li>
           </ol>
           <a className="guide-link" href="#converter">파일 선택 영역으로 이동 ↑</a>
@@ -373,19 +197,19 @@ nfd2nfc dir "./my-folder" --recursive`}</code></pre>
           </details>
           <details>
             <summary>큰 파일이나 폴더도 변환할 수 있나요?</summary>
-            <p>웹 버전은 선택한 파일 합계, ZIP 해제 후 합계, 생성 ZIP을 각각 {PROCESSING_LIMIT_LABEL}로 제한합니다. 더 큰 자료나 반복 작업에는 로컬 CLI 또는 macOS 앱을 이용하세요.</p>
+            <p>웹 버전은 각 변환 항목의 선택 파일 합계, ZIP 해제 후 합계, 생성 ZIP을 각각 {PROCESSING_LIMIT_LABEL}로 제한합니다. 한 폴더 안의 파일·ZIP은 합산합니다. 더 큰 자료나 반복 작업에는 로컬 CLI 또는 macOS 앱을 이용하세요.</p>
           </details>
           <details>
             <summary>변환한 파일은 어디에 보관되나요?</summary>
-            <p>파일은 이 기기에서 처리하며 브라우저 영구 저장소에 보관하지 않습니다. 변환 결과와 다운로드 링크는 {RESULT_LIFETIME_MS / 60_000}분 뒤 자동 해제됩니다. 기기에 다운로드한 파일은 직접 삭제해야 합니다.</p>
+            <p>파일은 이 기기에서 처리하며 브라우저 영구 저장소에 보관하지 않습니다. 각 결과와 다운로드 링크는 생성된 뒤 {RESULT_LIFETIME_MS / 60_000}분 후 독립적으로 해제됩니다. 파일을 더 추가해도 기존 결과의 보관 시간은 늘어나지 않습니다. 기기에 다운로드한 파일은 직접 삭제해야 합니다.</p>
           </details>
         </section>
       </main>
 
       <footer>
         <p>파일 내용은 그대로, 한글 이름만 정리합니다.</p>
-        <p>선택·압축 해제 후 파일 합계와 생성 ZIP은 각각 최대 {PROCESSING_LIMIT_LABEL}입니다.</p>
-        <p>결과는 {RESULT_LIFETIME_MS / 60_000}분 뒤 자동 해제됩니다. 기기에 다운로드한 파일은 직접 삭제해주세요.</p>
+        <p>각 변환 항목의 선택·압축 해제 후 파일 합계와 생성 ZIP은 각각 최대 {PROCESSING_LIMIT_LABEL}입니다.</p>
+        <p>각 결과는 생성된 뒤 {RESULT_LIFETIME_MS / 60_000}분 후 자동 해제됩니다. 기기에 다운로드한 파일은 직접 삭제해주세요.</p>
         <details id="privacy" className="privacy-disclosure">
           <summary>개인정보 및 광고 안내</summary>
           <p>변환 코드는 선택한 파일을 서버로 전송하지 않습니다. Google AdSense 광고는 별도로 외부 네트워크 요청을 보내며, Google과 광고 파트너는 쿠키·IP 주소·기기 정보 등을 광고 제공 및 측정에 사용할 수 있습니다.</p>
@@ -397,32 +221,23 @@ nfd2nfc dir "./my-folder" --recursive`}</code></pre>
   );
 }
 
-function allowPaint(): Promise<void> {
-  // Yield without adding an artificial processing duration or blocking a background tab.
-  const { promise, resolve } = deferred<void>();
-  window.setTimeout(resolve, 0);
-  return promise;
-}
 
-function IdleView(props: {
+function PickerView(props: {
   dragActive: boolean;
-  error?: string;
-  notice?: string;
+  hasJobs: boolean;
   onDrop: (ev: DragEvent<HTMLElement>) => void;
   onDragOver: (ev: DragEvent<HTMLElement>) => void;
   onDragLeave: (ev: DragEvent<HTMLElement>) => void;
   onFileInput: (ev: ChangeEvent<HTMLInputElement>) => void;
   inputRef: RefObject<HTMLInputElement | null>;
-  errorRef: RefObject<HTMLDivElement | null>;
 }) {
   const [supportsFolderPicker, setSupportsFolderPicker] = useState(false);
   useEffect(() => {
     setSupportsFolderPicker('webkitdirectory' in document.createElement('input'));
   }, []);
   return (
-    <>
       <section
-        className={'dropzone' + (props.dragActive ? ' active' : '')}
+        className={'dropzone' + (props.dragActive ? ' active' : '') + (props.hasJobs ? ' compact' : '')}
         aria-label="파일 가져오기"
         onDrop={props.onDrop}
         onDragOver={props.onDragOver}
@@ -434,8 +249,8 @@ function IdleView(props: {
           <path d="M60 71V51m-8 8 8-8 8 8" />
         </svg>
         <h2>
-          <span className="desktop-copy">파일이나 ZIP을 여기에 놓아주세요</span>
-          <span className="mobile-copy">파일을 선택해 시작하세요</span>
+          <span className="desktop-copy">{props.hasJobs ? '파일이나 ZIP을 계속 추가하세요' : '파일이나 ZIP을 여기에 놓아주세요'}</span>
+          <span className="mobile-copy">{props.hasJobs ? '파일을 더 선택하세요' : '파일을 선택해 시작하세요'}</span>
         </h2>
         <p>ZIP은 풀어서, 폴더는 구조 그대로 이름을 정리합니다.</p>
         <div className="picker-actions">
@@ -458,34 +273,26 @@ function IdleView(props: {
             </label>
           )}
         </div>
-        <p className="hint">여러 파일을 한 번에 선택할 수 있습니다. 원본은 변경하지 않습니다.</p>
-        <p className="hint">한 번에 최대 {PROCESSING_LIMIT_LABEL}. ZIP 해제 후 합계·생성 ZIP에도 같은 제한이 적용됩니다.</p>
+        <p className="hint">파일·ZIP은 각각 다운로드하고, 폴더는 ZIP 하나로 묶습니다. 원본은 변경하지 않습니다.</p>
+        <p className="hint">각 변환은 최대 {PROCESSING_LIMIT_LABEL}. ZIP 해제 후 합계·생성 ZIP에도 같은 제한이 적용됩니다.</p>
         <p className="hint">ZIP 파일명은 UTF-8을 우선 사용하며, 구형 한국어 ZIP은 CP949로 읽습니다.</p>
       </section>
-      {props.error && <div className="error" role="alert" tabIndex={-1} ref={props.errorRef}>{props.error}</div>}
-      {props.notice && <div className="warn" role="status">{props.notice}</div>}
-    </>
   );
 }
 
 function ReadyView(props: {
-  collected: CollectSummary;
-  zipBytes?: number;
-  downloadUrl?: string;
-  filename: string;
-  expiresAt: number;
+  job: Extract<ConversionJob, { kind: 'ready' }>;
   onDownload: (event: MouseEvent<HTMLAnchorElement>) => void;
-  headingRef: RefObject<HTMLHeadingElement | null>;
-  onReset: () => void;
 }) {
-  const { collected, zipBytes, downloadUrl, filename, onReset } = props;
+  const { id, name, collected, zipBytes, downloadUrl, filename, expiresAt } = props.job;
   const hasFiles = collected.files.length > 0;
 
   return (
-    <section className="result status" data-empty={!hasFiles} aria-labelledby="result-title">
-      <h2 id="result-title" tabIndex={-1} ref={props.headingRef}>
-        {hasFiles ? 'NFC 파일을 다운로드하세요.' : '다른 파일을 선택해주세요.'}
-      </h2>
+    <section className="result" data-empty={!hasFiles} aria-labelledby={`result-title-${id}`}>
+      <h4 id={`result-title-${id}`}>
+        {hasFiles ? 'NFC 파일을 다운로드하세요.' : '처리할 파일이 없습니다.'}
+      </h4>
+      <span className="sr-only" role="status">{name} 변환이 완료되었습니다.</span>
       {hasFiles ? (
         <div className="stats">
           {collected.archiveCount > 0 && <span><strong>{collected.extractedCount.toLocaleString()}</strong>파일 해제</span>}
@@ -520,16 +327,14 @@ function ReadyView(props: {
               </svg>
               ZIP 다운로드
             </a>
-            <button className="link" onClick={onReset}>다른 파일 변환하기</button>
           </div>
           <p className="hint">
             결과와 다운로드 링크는 {RESULT_LIFETIME_MS / 60_000}분 뒤 (
-            <time dateTime={new Date(props.expiresAt).toISOString()}>{new Date(props.expiresAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time>
+            <time dateTime={new Date(expiresAt).toISOString()}>{new Date(expiresAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time>
             ) 자동 해제됩니다. 다운로드한 파일은 기기에 남습니다.
           </p>
         </>
       )}
-      {!hasFiles && <div className="actions"><button className="primary" onClick={onReset}>다시 선택하기</button></div>}
     </section>
   );
 }
