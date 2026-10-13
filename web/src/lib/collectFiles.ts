@@ -39,6 +39,7 @@ export interface CollectProgress {
 
 export interface ConversionInput {
   name: string;
+  isDirectory: boolean;
   collect(onProgress?: (progress: CollectProgress) => void): Promise<CollectResult>;
 }
 
@@ -65,13 +66,13 @@ export function captureFileInputs(files: FileList, directory: boolean): Conversi
   if (directory) {
     const first = snapshot[0];
     const name = first.webkitRelativePath.split('/')[0] || first.name;
-    return [fileInput(name, snapshot)];
+    return [fileInput(name, snapshot, true)];
   }
-  return snapshot.map((file) => fileInput(file.name, [file]));
+  return snapshot.map((file) => fileInput(file.name, [file], false));
 }
 
-function fileInput(name: string, files: readonly File[]): ConversionInput {
-  return { name, collect: (onProgress) => collectFromFileList(files, onProgress) };
+function fileInput(name: string, files: readonly File[], isDirectory: boolean): ConversionInput {
+  return { name, isDirectory, collect: (onProgress) => collectFromFileList(files, onProgress) };
 }
 
 /** The drag data store becomes protected after the native drop handler returns. */
@@ -94,6 +95,7 @@ export function captureDroppedInputs(dt: DataTransfer): ConversionInput[] {
 function droppedInput(root: DroppedRoot): ConversionInput {
   return {
     name: root.entry?.name || root.file!.name,
+    isDirectory: root.entry?.isDirectory === true,
     collect: (onProgress) => collectDroppedRoot(root, onProgress),
   };
 }

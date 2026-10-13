@@ -5,7 +5,7 @@ import { ProcessingPipeline } from './ProcessingPipeline';
 import { PROCESSING_LIMIT_LABEL, RESULT_LIFETIME_MS } from './lib/resourcePolicy';
 
 const jobLabels: Record<ConversionJob['kind'], string> = {
-  queued: '대기 중', working: '처리 중', ready: '완료', error: '처리 실패', expired: '보관 시간 만료',
+  queued: '대기 중', working: '처리 중', ready: '다운로드 가능', error: '처리 실패', expired: '만료',
 };
 
 export function App() {
@@ -120,28 +120,18 @@ export function App() {
           />
           {jobs.length > 0 && (
             <section className="conversion-history" aria-labelledby="jobs-title">
-              <h2 id="jobs-title">변환 내역</h2>
-              <p className="hint">파일을 계속 추가할 수 있습니다. 완료된 항목은 각각 다운로드하세요.</p>
-              <ol className="job-list">
+              <h2 id="jobs-title">출력 파일</h2>
+              <p className="hint">압축 파일명을 클릭해 다운로드하세요. 각 결과는 생성 후 {RESULT_LIFETIME_MS / 60_000}분 동안 받을 수 있습니다.</p>
+              <ul className="job-list">
                 {jobs.map((job) => (
-                  <li className="conversion-job status" data-job-id={job.id} data-kind={job.kind} key={job.id} aria-labelledby={`job-title-${job.id}`}>
-                    <div className="job-heading">
-                      <div>
-                        <p className="eyebrow">변환 {job.id} · {jobLabels[job.kind]}</p>
-                        <h3 id={`job-title-${job.id}`}>{job.name}</h3>
-                      </div>
-                      {job.kind !== 'queued' && job.kind !== 'working' && (
-                        <button className="link" aria-label={`${job.name} 결과 삭제`} onClick={() => removeJob(job.id)}>결과 삭제</button>
-                      )}
-                    </div>
-                    {job.kind === 'queued' && <p className="hint" role="status">앞선 항목의 변환이 끝나면 자동으로 시작합니다.</p>}
-                    {job.kind === 'working' && <ProcessingPipeline progress={job.progress} collected={job.collected} />}
-                    {job.kind === 'ready' && <ReadyView job={job} onDownload={(event) => handleDownload(job.id, event)} />}
-                    {job.kind === 'error' && <p className="error" role="alert">{job.message}</p>}
-                    {job.kind === 'expired' && <p className="hint" role="status">이 결과의 {RESULT_LIFETIME_MS / 60_000}분 보관 시간이 지나 다운로드 링크를 해제했습니다. 필요하면 파일을 다시 추가하세요.</p>}
-                  </li>
+                  <OutputFile
+                    key={job.id}
+                    job={job}
+                    onDownload={(event) => handleDownload(job.id, event)}
+                    onRemove={() => removeJob(job.id)}
+                  />
                 ))}
-              </ol>
+              </ul>
             </section>
           )}
         </section>
@@ -160,7 +150,7 @@ export function App() {
             </li>
             <li>
               <h3>변환한 ZIP 다운로드</h3>
-              <p>완료된 항목마다 ZIP 다운로드를 누르세요. 파일·ZIP은 각각, 폴더는 구조를 유지한 ZIP 하나로 받을 수 있습니다.</p>
+              <p>출력 파일 목록의 압축 파일명을 클릭하세요. 원본 파일·폴더 이름으로 ZIP을 만들며, 폴더의 내부 구조를 유지합니다.</p>
             </li>
           </ol>
           <a className="guide-link" href="#converter">파일 선택 영역으로 이동 ↑</a>
@@ -280,62 +270,62 @@ function PickerView(props: {
   );
 }
 
-function ReadyView(props: {
-  job: Extract<ConversionJob, { kind: 'ready' }>;
+function OutputFile({ job, onDownload, onRemove }: {
+  job: ConversionJob;
   onDownload: (event: MouseEvent<HTMLAnchorElement>) => void;
+  onRemove: () => void;
 }) {
-  const { id, name, collected, zipBytes, downloadUrl, filename, expiresAt } = props.job;
-  const hasFiles = collected.files.length > 0;
+  const downloadable = job.kind === 'ready' && job.downloadUrl !== undefined;
+  const labelId = `job-title-${job.id}`;
 
   return (
-    <section className="result" data-empty={!hasFiles} aria-labelledby={`result-title-${id}`}>
-      <h4 id={`result-title-${id}`}>
-        {hasFiles ? 'NFC 파일을 다운로드하세요.' : '처리할 파일이 없습니다.'}
-      </h4>
-      <span className="sr-only" role="status">{name} 변환이 완료되었습니다.</span>
-      {hasFiles ? (
-        <div className="stats">
-          {collected.archiveCount > 0 && <span><strong>{collected.extractedCount.toLocaleString()}</strong>파일 해제</span>}
-          <span><strong>{collected.normalizedCount.toLocaleString()}</strong>NFC 변환</span>
-          <span><strong>{collected.passthroughCount.toLocaleString()}</strong>변환 제외</span>
-        </div>
-      ) : (
-        <div className="warn">선택한 항목에 파일이 없습니다. 비어 있지 않은 ZIP이나 폴더를 선택해주세요.</div>
-      )}
-      {hasFiles && collected.normalizedCount === 0 && (
-        <div className="success">한글 파일명은 이미 NFC입니다. 이름 충돌 여부까지 확인해 ZIP을 준비했습니다.</div>
-      )}
-      {collected.collisions.length > 0 && (
-        <div className="warn">
-          정규화 후 이름이 겹치는 파일 {collected.collisions.length.toLocaleString()}개는 덮어쓰지 않고{' '}
-          <code>-2</code>, <code>-3</code> 등의 번호를 붙였습니다.
-        </div>
-      )}
-      {zipBytes !== undefined && downloadUrl && (
-        <>
-          <div className="download-file">
-            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
-              <path d="M5 3h10l4 4v14H5zM14 3v5h5M10 3v3m0 3v3m0 3v3" />
-            </svg>
-            <span>{filename}</span>
-            <small>{formatSize(zipBytes)}</small>
-          </div>
-          <div className="actions">
-            <a className="primary" href={downloadUrl} download={filename} onClick={props.onDownload}>
-              <svg className="download-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10 3v9m-4-4 4 4 4-4M4 13v4h12v-4" />
-              </svg>
-              ZIP 다운로드
+    <li className="conversion-job" data-job-id={job.id} data-kind={job.kind} aria-labelledby={labelId}>
+      <div className="job-file">
+        <svg className="output-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+          <path d="M5 3h10l4 4v14H5zM14 3v5h5M10 3v3m0 3v3m0 3v3" />
+        </svg>
+        <div className="job-description">
+          {job.kind === 'ready' && downloadable ? (
+            <a id={labelId} className="output-name output-link" href={job.downloadUrl} download={job.filename} onClick={onDownload}>
+              {job.filename}
             </a>
-          </div>
-          <p className="hint">
-            결과와 다운로드 링크는 {RESULT_LIFETIME_MS / 60_000}분 뒤 (
-            <time dateTime={new Date(expiresAt).toISOString()}>{new Date(expiresAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time>
-            ) 자동 해제됩니다. 다운로드한 파일은 기기에 남습니다.
-          </p>
-        </>
+          ) : (
+            <span id={labelId} className="output-name">{job.filename}</span>
+          )}
+          {job.kind === 'ready' && (downloadable ? (
+            <p className="job-meta">
+              {job.collected.files.length.toLocaleString()}개 파일 · {job.collected.normalizedCount > 0 ? `${job.collected.normalizedCount.toLocaleString()}개 이름 정리` : '이름 유지'} ·{' '}
+              <time dateTime={new Date(job.expiresAt).toISOString()}>{new Date(job.expiresAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 만료</time>
+            </p>
+          ) : (
+            <p className="job-meta">선택한 항목에 파일이 없습니다. 비어 있지 않은 ZIP이나 폴더를 추가하세요.</p>
+          ))}
+          {job.kind === 'ready' && job.collected.collisions.length > 0 && (
+            <p className="job-meta job-warning">이름이 겹치는 {job.collected.collisions.length.toLocaleString()}개 파일에 번호를 붙여 보존했습니다.</p>
+          )}
+          {job.kind === 'queued' && <p className="job-meta">앞선 항목의 변환이 끝나면 시작합니다.</p>}
+          {job.kind === 'error' && <p className="job-meta job-error" role="alert">{job.message}</p>}
+          {job.kind === 'expired' && <p className="job-meta">보관 시간이 지났습니다. 필요하면 원본을 다시 추가하세요.</p>}
+        </div>
+      </div>
+      <div className="job-info">
+        {job.kind === 'ready' && job.zipBytes !== undefined && <span className="job-size">{formatSize(job.zipBytes)}</span>}
+        <span className="job-state" role="status">{job.kind === 'ready' && !downloadable ? '파일 없음' : jobLabels[job.kind]}</span>
+      </div>
+      {job.kind !== 'queued' && job.kind !== 'working' && (
+        <button className="job-remove" aria-label={`${job.filename} 결과 삭제`} title="목록에서 삭제" onClick={onRemove}>
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="m6 6 8 8M14 6l-8 8" />
+          </svg>
+        </button>
       )}
-    </section>
+      {job.kind === 'working' && (
+        <details className="job-progress">
+          <summary>처리 과정 보기</summary>
+          <ProcessingPipeline progress={job.progress} collected={job.collected} />
+        </details>
+      )}
+    </li>
   );
 }
 

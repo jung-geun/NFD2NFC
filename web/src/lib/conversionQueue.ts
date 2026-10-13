@@ -2,9 +2,10 @@ import type { WorkflowProgress } from '../ProcessingPipeline';
 import { buildZip } from './buildZip';
 import type { CollectSummary, ConversionInput } from './collectFiles';
 import { deferred } from './deferred';
+import { normalizeToNFC, shouldNormalize } from './normalize';
 import { RESULT_LIFETIME_MS } from './resourcePolicy';
 
-type JobIdentity = { id: number; name: string };
+type JobIdentity = { id: number; name: string; filename: string };
 export type ConversionJob = JobIdentity & (
   | { kind: 'queued' }
   | { kind: 'working'; progress: WorkflowProgress; collected?: CollectSummary }
@@ -13,7 +14,6 @@ export type ConversionJob = JobIdentity & (
       collected: CollectSummary;
       zipBytes?: number;
       downloadUrl?: string;
-      filename: string;
       expiresAt: number;
     }
   | { kind: 'error'; message: string }
@@ -46,7 +46,9 @@ export class ConversionQueue {
     if (this.disposed) return;
     for (const input of inputs) {
       if (this.disposed) break;
-      const identity = { id: this.nextId++, name: input.name };
+      const name = shouldNormalize(input.name) ? normalizeToNFC(input.name) : input.name;
+      const filename = `${input.isDirectory ? name : name.replace(/\.zip$/i, '')}.zip`;
+      const identity = { id: this.nextId++, name: input.name, filename };
       this.pending.push({ ...identity, input });
       this.publish({ ...identity, kind: 'queued' });
     }
@@ -76,7 +78,7 @@ export class ConversionQueue {
     for (const job of this.jobs.values()) {
       if (job.kind !== 'ready' || now < job.expiresAt) continue;
       if (job.downloadUrl) URL.revokeObjectURL(job.downloadUrl);
-      this.publish({ id: job.id, name: job.name, kind: 'expired' });
+      this.publish({ id: job.id, name: job.name, filename: job.filename, kind: 'expired' });
     }
     this.scheduleExpiry();
   }
@@ -123,7 +125,7 @@ export class ConversionQueue {
     if (this.disposed || this.active) return;
     const request = this.pending.shift();
     if (!request) return;
-    const active: ActiveJob = { id: request.id, name: request.name };
+    const active: ActiveJob = { id: request.id, name: request.name, filename: request.filename };
     this.active = active;
     this.publish({ ...active, kind: 'working', progress: { phase: 'reading', done: 0, archiveCount: 0 } });
     void this.convert(active, request.input);
@@ -147,9 +149,8 @@ export class ConversionQueue {
         extractedCount: collected.extractedCount,
         files: collected.files.map(({ zipPath, originalPath, normalized }) => ({ zipPath, originalPath, normalized })),
       };
-      const filename = `nfc-${active.id}.zip`;
       if (collected.files.length === 0) {
-        this.publish({ ...active, kind: 'ready', collected: summary, filename, expiresAt: Date.now() + RESULT_LIFETIME_MS });
+        this.publish({ ...active, kind: 'ready', collected: summary, expiresAt: Date.now() + RESULT_LIFETIME_MS });
         this.scheduleExpiry();
         return;
       }
@@ -185,7 +186,6 @@ export class ConversionQueue {
         collected: summary,
         zipBytes: blob.size,
         downloadUrl,
-        filename,
         expiresAt: Date.now() + RESULT_LIFETIME_MS,
       });
       this.scheduleExpiry();
