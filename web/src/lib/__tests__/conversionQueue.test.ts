@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { captureFileInputs, collectFromFileList, type CollectResult, type ConversionInput } from '../collectFiles';
+import { captureDroppedInputs, captureFileInputs, collectFromFileList, type CollectResult, type ConversionInput } from '../collectFiles';
 import { buildZip } from '../buildZip';
 import { ConversionQueue, type ConversionJob, type ConversionUpdate } from '../conversionQueue';
 import { deferred } from '../deferred';
@@ -60,7 +60,7 @@ function hold(input: ConversionInput) {
   const started = deferred<void>();
   let finished: Promise<CollectResult> | undefined;
   const held: ConversionInput = {
-    name: input.name,
+    ...input,
     collect(onProgress) {
       started.resolve();
       finished = gate.promise.then(() => input.collect(onProgress));
@@ -94,13 +94,13 @@ afterEach(() => {
 describe('continuous conversion results', () => {
   it('keeps separate real file and ZIP downloads, including repeated input names', async () => {
     const source = await collectFromFileList([new File(['archived payload'], '자료.txt'.normalize('NFD'))]);
-    const zip = new File([await buildZip(source.files)], 'bundle.zip');
+    const zip = new File([await buildZip(source.files)], '자료묶음.ZIP'.normalize('NFD'));
     const h = harness();
     h.queue.enqueue(capture(new File(['first payload'], '한글.txt'.normalize('NFD')), zip));
     const first = await h.ready(1);
     h.queue.enqueue(capture(new File(['later payload'], '한글.txt'.normalize('NFD'))));
     const [second, third] = await Promise.all([h.ready(2), h.ready(3)]);
-    expect(new Set([first.filename, second.filename, third.filename]).size).toBe(3);
+    expect([first.filename, second.filename, third.filename]).toEqual(['한글.txt.zip', '자료묶음.zip', '한글.txt.zip']);
     expect(new Set([first.downloadUrl, second.downloadUrl, third.downloadUrl]).size).toBe(3);
     expect(await contents(first)).toEqual([{ path: '한글.txt', text: 'first payload' }]);
     expect(await contents(second)).toEqual([{ path: '자료.txt', text: 'archived payload' }]);
@@ -110,6 +110,50 @@ describe('continuous conversion results', () => {
     }]);
     expect(second.collected.archiveCount).toBe(1);
     expect([...h.jobs.values()].every((job) => job.kind === 'ready')).toBe(true);
+  });
+
+  it('keeps complete ordinary file names so different extensions and extensionless files remain identifiable', async () => {
+    const sources = ['report.pdf', 'report.docx', 'report.final.txt', 'README', '.gitignore'];
+    const h = harness();
+    h.queue.enqueue(capture(...sources.map((name) => new File([`contents of ${name}`], name))));
+    for (const [index, name] of sources.entries()) {
+      const job = await h.ready(index + 1);
+      expect(job.filename).toBe(`${name}.zip`);
+      expect(await contents(job)).toEqual([{ path: name, text: `contents of ${name}` }]);
+    }
+  });
+
+  it.each(['picker', 'drop'] as const)('names a %s folder archive after the root directory, including a .zip suffix in the directory name', async (source) => {
+    const rootName = '연구.2026.zip'.normalize('NFD');
+    const file = new File(['folder payload'], '문서.txt'.normalize('NFD'));
+    Object.defineProperty(file, 'webkitRelativePath', { value: `${rootName}/${file.name}` });
+    let input: ConversionInput[];
+    if (source === 'picker') {
+      input = captureFileInputs([file] as unknown as FileList, true);
+    } else {
+      const child = {
+        name: file.name, isFile: true, isDirectory: false,
+        file: (success: (file: File) => void) => success(file),
+      } as FileSystemFileEntry;
+      const root = {
+        name: rootName, isFile: false, isDirectory: true,
+        createReader() {
+          let read = false;
+          return { readEntries(success: (entries: FileSystemEntry[]) => void) {
+            success(read ? [] : [child]);
+            read = true;
+          } };
+        },
+      } as FileSystemDirectoryEntry;
+      input = captureDroppedInputs({
+        items: [{ kind: 'file', webkitGetAsEntry: () => root, getAsFile: () => null }], files: [],
+      } as unknown as DataTransfer);
+    }
+    const h = harness();
+    h.queue.enqueue(input);
+    const job = await h.ready(1);
+    expect(job.filename).toBe('연구.2026.zip.zip');
+    expect(await contents(job)).toEqual([{ path: '연구.2026.zip/문서.txt', text: 'folder payload' }]);
   });
 
   it('accepts additions during work, preserves order, and isolates real malformed ZIP failures', async () => {
@@ -151,7 +195,7 @@ describe('continuous conversion results', () => {
     expect(h.queue.canDownload(1)).toBe(true);
     vi.setSystemTime(older.expiresAt);
     expect(h.queue.canDownload(1)).toBe(false);
-    expect(h.jobs.get(1)).toEqual({ id: 1, name: 'old.txt', kind: 'expired' });
+    expect(h.jobs.get(1)).toMatchObject({ id: 1, name: 'old.txt', kind: 'expired' });
     expect(h.queue.canDownload(2)).toBe(true);
     expect(revoke.mock.calls).toEqual([[older.downloadUrl]]);
     expect(await contents(newer)).toEqual([{ path: 'new.txt', text: 'new' }]);
@@ -169,7 +213,7 @@ describe('continuous conversion results', () => {
     await vi.waitFor(() => expect(h.jobs.get(1)?.kind).toBe('ready'));
     const first = await h.ready(1);
     await vi.advanceTimersByTimeAsync(60_000);
-    const empty: ConversionInput = { name: 'empty folder', collect: (progress) => collectFromFileList([], progress) };
+    const empty: ConversionInput = { name: 'empty folder', isDirectory: true, collect: (progress) => collectFromFileList([], progress) };
     h.queue.enqueue([empty]);
     await vi.waitFor(() => expect(h.jobs.get(2)?.kind).toBe('ready'));
     const second = await h.ready(2);
@@ -179,7 +223,7 @@ describe('continuous conversion results', () => {
     expect(h.jobs.get(1)?.kind).toBe('expired');
     expect(h.jobs.get(2)?.kind).toBe('ready');
     await vi.advanceTimersByTimeAsync(second.expiresAt - Date.now());
-    expect(h.jobs.get(2)).toEqual({ id: 2, name: 'empty folder', kind: 'expired' });
+    expect(h.jobs.get(2)).toMatchObject({ id: 2, name: 'empty folder', kind: 'expired' });
   });
 
   it('keeps a manually removed download alive for one second and clears delayed URLs immediately', async () => {
