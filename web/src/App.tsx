@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent, type MouseEvent, type RefObject } from 'react';
 import { captureDroppedInputs, captureFileInputs } from './lib/collectFiles';
 import { ConversionQueue, type ConversionJob, type ConversionUpdate } from './lib/conversionQueue';
-import { ProcessingPipeline } from './ProcessingPipeline';
+import { OutputFiles } from './OutputFiles';
 import { PROCESSING_LIMIT_LABEL, RESULT_LIFETIME_MS } from './lib/resourcePolicy';
-
-const jobLabels: Record<ConversionJob['kind'], string> = {
-  queued: '대기 중', working: '처리 중', ready: '다운로드 가능', error: '처리 실패', expired: '만료',
-};
 
 export function App() {
   const [jobs, setJobs] = useState<ConversionJob[]>([]);
@@ -72,13 +68,13 @@ export function App() {
     if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
     setDragActive(false);
   };
-  const handleDownload = (id: number, event: MouseEvent<HTMLAnchorElement>) => {
+  const handleDownload = useCallback((id: number, event: MouseEvent<HTMLAnchorElement>) => {
     if (!queue.current?.canDownload(id)) event.preventDefault();
-  };
-  const removeJob = (id: number) => {
+  }, []);
+  const removeJob = useCallback((id: number) => {
     queue.current?.remove(id);
-    fileInput.current?.focus();
-  };
+  }, []);
+  const checkExpiry = useCallback(() => queue.current?.checkExpiry(), []);
 
   return (
     <div className="app">
@@ -119,20 +115,7 @@ export function App() {
             inputRef={fileInput}
           />
           {jobs.length > 0 && (
-            <section className="conversion-history" aria-labelledby="jobs-title">
-              <h2 id="jobs-title">출력 파일</h2>
-              <p className="hint">압축 파일명을 클릭해 다운로드하세요. 각 결과는 생성 후 {RESULT_LIFETIME_MS / 60_000}분 동안 받을 수 있습니다.</p>
-              <ul className="job-list">
-                {jobs.map((job) => (
-                  <OutputFile
-                    key={job.id}
-                    job={job}
-                    onDownload={(event) => handleDownload(job.id, event)}
-                    onRemove={() => removeJob(job.id)}
-                  />
-                ))}
-              </ul>
-            </section>
+            <OutputFiles jobs={jobs} onDownload={handleDownload} onRemove={removeJob} onCheckExpiry={checkExpiry} />
           )}
         </section>
 
@@ -191,7 +174,7 @@ nfd2nfc dir "./my-folder" --recursive`}</code></pre>
           </details>
           <details>
             <summary>변환한 파일은 어디에 보관되나요?</summary>
-            <p>파일은 이 기기에서 처리하며 브라우저 영구 저장소에 보관하지 않습니다. 각 결과와 다운로드 링크는 생성된 뒤 {RESULT_LIFETIME_MS / 60_000}분 후 독립적으로 해제됩니다. 파일을 더 추가해도 기존 결과의 보관 시간은 늘어나지 않습니다. 기기에 다운로드한 파일은 직접 삭제해야 합니다.</p>
+            <p>파일은 이 기기에서 처리하며 브라우저 영구 저장소에 보관하지 않습니다. 각 결과에 남은 시간을 표시하며, 생성된 뒤 {RESULT_LIFETIME_MS / 60_000}분 후 다운로드 링크를 해제하고 목록에서 자동으로 제거합니다. 파일을 더 추가해도 기존 결과의 보관 시간은 늘어나지 않습니다. 기기에 다운로드한 파일은 직접 삭제해야 합니다.</p>
           </details>
         </section>
       </main>
@@ -200,6 +183,10 @@ nfd2nfc dir "./my-folder" --recursive`}</code></pre>
         <p>파일 내용은 그대로, 한글 이름만 정리합니다.</p>
         <p>각 변환 항목의 선택·압축 해제 후 파일 합계와 생성 ZIP은 각각 최대 {PROCESSING_LIMIT_LABEL}입니다.</p>
         <p>각 결과는 생성된 뒤 {RESULT_LIFETIME_MS / 60_000}분 후 자동 해제됩니다. 기기에 다운로드한 파일은 직접 삭제해주세요.</p>
+        <nav className="footer-links" aria-label="지원 및 개인정보">
+          <a href="/privacy/">개인정보 처리방침</a>
+          <a href="/support/">지원 및 문의</a>
+        </nav>
         <details id="privacy" className="privacy-disclosure">
           <summary>개인정보 및 광고 안내</summary>
           <p>변환 코드는 선택한 파일을 서버로 전송하지 않습니다. Google AdSense 광고는 별도로 외부 네트워크 요청을 보내며, Google과 광고 파트너는 쿠키·IP 주소·기기 정보 등을 광고 제공 및 측정에 사용할 수 있습니다.</p>
@@ -270,68 +257,3 @@ function PickerView(props: {
   );
 }
 
-function OutputFile({ job, onDownload, onRemove }: {
-  job: ConversionJob;
-  onDownload: (event: MouseEvent<HTMLAnchorElement>) => void;
-  onRemove: () => void;
-}) {
-  const downloadable = job.kind === 'ready' && job.downloadUrl !== undefined;
-  const labelId = `job-title-${job.id}`;
-
-  return (
-    <li className="conversion-job" data-job-id={job.id} data-kind={job.kind} aria-labelledby={labelId}>
-      <div className="job-file">
-        <svg className="output-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
-          <path d="M5 3h10l4 4v14H5zM14 3v5h5M10 3v3m0 3v3m0 3v3" />
-        </svg>
-        <div className="job-description">
-          {job.kind === 'ready' && downloadable ? (
-            <a id={labelId} className="output-name output-link" href={job.downloadUrl} download={job.filename} onClick={onDownload}>
-              {job.filename}
-            </a>
-          ) : (
-            <span id={labelId} className="output-name">{job.filename}</span>
-          )}
-          {job.kind === 'ready' && (downloadable ? (
-            <p className="job-meta">
-              {job.collected.files.length.toLocaleString()}개 파일 · {job.collected.normalizedCount > 0 ? `${job.collected.normalizedCount.toLocaleString()}개 이름 정리` : '이름 유지'} ·{' '}
-              <time dateTime={new Date(job.expiresAt).toISOString()}>{new Date(job.expiresAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 만료</time>
-            </p>
-          ) : (
-            <p className="job-meta">선택한 항목에 파일이 없습니다. 비어 있지 않은 ZIP이나 폴더를 추가하세요.</p>
-          ))}
-          {job.kind === 'ready' && job.collected.collisions.length > 0 && (
-            <p className="job-meta job-warning">이름이 겹치는 {job.collected.collisions.length.toLocaleString()}개 파일에 번호를 붙여 보존했습니다.</p>
-          )}
-          {job.kind === 'queued' && <p className="job-meta">앞선 항목의 변환이 끝나면 시작합니다.</p>}
-          {job.kind === 'error' && <p className="job-meta job-error" role="alert">{job.message}</p>}
-          {job.kind === 'expired' && <p className="job-meta">보관 시간이 지났습니다. 필요하면 원본을 다시 추가하세요.</p>}
-        </div>
-      </div>
-      <div className="job-info">
-        {job.kind === 'ready' && job.zipBytes !== undefined && <span className="job-size">{formatSize(job.zipBytes)}</span>}
-        <span className="job-state" role="status">{job.kind === 'ready' && !downloadable ? '파일 없음' : jobLabels[job.kind]}</span>
-      </div>
-      {job.kind !== 'queued' && job.kind !== 'working' && (
-        <button className="job-remove" aria-label={`${job.filename} 결과 삭제`} title="목록에서 삭제" onClick={onRemove}>
-          <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="m6 6 8 8M14 6l-8 8" />
-          </svg>
-        </button>
-      )}
-      {job.kind === 'working' && (
-        <details className="job-progress">
-          <summary>처리 과정 보기</summary>
-          <ProcessingPipeline progress={job.progress} collected={job.collected} />
-        </details>
-      )}
-    </li>
-  );
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>개인정보 처리방침 | NFD2NFC</title>
+    <meta name="description" content="NFD2NFC macOS 앱의 기기 내 파일 처리와 삭제 방법, 자발적 지원 문의, 웹사이트 호스팅 및 광고의 개인정보 처리 안내입니다.">
+    <link rel="canonical" href="https://nfd2nfc.com/privacy/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:title" content="개인정보 처리방침 | NFD2NFC">
+    <meta property="og:description" content="네이티브 앱의 로컬 처리와 지원 문의·웹사이트의 외부 서비스 처리를 구분하여 안내합니다.">
+    <meta property="og:url" content="https://nfd2nfc.com/privacy/">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/src/content.css">
+  </head>
+  <body>
+    <div class="app content-page">
+      <header>
+        <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+        <div class="site-nav">
+          <a class="site-name" href="/">NFD2NFC</a>
+          <nav aria-label="사이트 탐색">
+            <a href="/">홈</a>
+            <a href="/privacy/" aria-current="page">개인정보 처리방침</a>
+            <a href="/support/">지원</a>
+          </nav>
+        </div>
+        <div class="content-intro">
+          <p class="eyebrow">PRIVACY</p>
+          <h1>개인정보 처리방침</h1>
+          <p>macOS 앱 안에서 처리하는 정보와, 웹사이트 방문 또는 지원 문의로 외부 서비스에서 처리되는 정보를 구분하여 설명합니다.</p>
+          <p class="content-meta">시행일: <time datetime="2026-10-15">2026-10-15</time> · 최종 수정일: <time datetime="2026-10-15">2026-10-15</time></p>
+        </div>
+      </header>
+
+      <main id="main-content" class="content-body">
+        <aside class="notice" aria-label="핵심 안내">
+          <p><strong>네이티브 NFD2NFC 앱은 사용자 파일과 앱 상태를 기기 안에서만 처리하며, 개발자에게 자동으로 수집·업로드하지 않습니다.</strong> 이메일·GitHub 문의는 사용자가 별도로 보내는 정보이고, 웹사이트에는 호스팅 및 홈페이지 광고에 따른 외부 서비스 처리가 있습니다. 앱의 로컬 처리 설명을 웹사이트 전체의 무수집·무추적 보장으로 해석하지 마세요.</p>
+        </aside>
+
+        <nav class="contents" aria-label="개인정보 처리방침 목차">
+          <h2>목차</h2>
+          <ol>
+            <li><a href="#scope">적용 범위와 담당 개발자</a></li>
+            <li><a href="#native-processing">네이티브 앱의 처리 항목과 목적</a></li>
+            <li><a href="#native-retention">로컬 보관과 기록 한도</a></li>
+            <li><a href="#native-deletion">감시 중단·권한 철회·초기화 및 삭제</a></li>
+            <li><a href="#support-data">자발적 지원 문의</a></li>
+            <li><a href="#website">웹사이트·호스팅·광고</a></li>
+            <li><a href="#external-services">외부 서비스와 제공자 정책</a></li>
+            <li><a href="#rights">이용자와 법정대리인의 권리</a></li>
+            <li><a href="#protection">정보 최소화와 보호</a></li>
+            <li><a href="#changes-contact">변경 안내와 연락처</a></li>
+          </ol>
+        </nav>
+
+        <section id="scope" class="content-section" aria-labelledby="scope-heading">
+          <h2 id="scope-heading">1. 적용 범위와 담당 개발자</h2>
+          <p>이 방침은 NFD2NFC 네이티브 macOS 앱(앱 표시명: NFD → NFC), <a href="/">nfd2nfc.com 웹사이트</a>, 개발자에게 보내는 지원 문의에 적용됩니다. 네이티브 앱과 별도의 브라우저 변환기는 실행 환경이 다릅니다. Gmail, GitHub, Google 광고 등 외부 서비스 자체의 처리는 각 제공자의 정책도 함께 적용됩니다.</p>
+          <dl class="definition-list">
+            <dt>담당 개발자·개인정보 문의 창구</dt>
+            <dd>jung-geun — 프로젝트 패키지 작성자 정보에 공개된 개발자 표기입니다.</dd>
+            <dt>공개 연락 이메일</dt>
+            <dd><a href="mailto:pieroot.02@gmail.com">pieroot.02@gmail.com</a></dd>
+            <dt>프로젝트 저장소</dt>
+            <dd><a href="https://github.com/jung-geun/NFD2NFC">github.com/jung-geun/NFD2NFC</a></dd>
+          </dl>
+        </section>
+
+        <section id="native-processing" class="content-section" aria-labelledby="native-processing-heading">
+          <h2 id="native-processing-heading">2. 네이티브 앱의 처리 항목과 목적</h2>
+          <p>아래 정보는 사용자 Mac에서 처리됩니다. 파일명이나 경로에 개인의 이름 등이 포함될 수 있지만, 이를 처리한다는 사실이 개발자가 해당 정보를 외부에서 수집한다는 뜻은 아닙니다.</p>
+          <dl class="definition-list">
+            <dt>선택한 파일·폴더와 경로, 파일 시스템 정보</dt>
+            <dd>사용자가 선택한 폴더와 하위 항목의 이름·경로, 파일 식별 정보 및 시간 정보 등을 확인하여 한글 NFD 이름을 NFC 이름으로 변경하고, 변경 감지·충돌 방지·되돌리기 시 동일 파일 확인에 사용합니다. 이름 변환은 원본 파일의 내용 바이트를 변경하지 않습니다.</dd>
+            <dt>폴더 접근 북마크</dt>
+            <dd>감시 폴더와 ZIP 저장 위치의 경로 및 macOS 보안 범위 북마크를 로컬에 저장하여 사용자가 허용한 위치에 다시 접근합니다. 북마크는 파일 내용의 사본이 아니라 샌드박스 접근을 위한 권한 정보입니다.</dd>
+            <dt>앱 설정</dt>
+            <dd>알림 사용 여부·알림 간격·Dock 및 메뉴 막대 아이콘 표시 설정을 저장하여 사용 환경을 유지합니다. 로그인 시 실행 여부는 macOS의 로그인 항목 기능으로 관리됩니다. 알림은 macOS의 로컬 알림이며 원격 푸시 전송이 아닙니다.</dd>
+            <dt>변환 기록</dt>
+            <dd>변환 전후 이름·경로, 처리 시각, 파일 식별 정보 및 되돌림 상태 등을 저장하여 변환 기록 표시, Finder에서 찾기, 경로 복사와 개별 되돌리기를 제공합니다.</dd>
+            <dt>되돌린 이름의 재변환 제외 정보</dt>
+            <dd>되돌린 항목의 파일 식별 정보·이름·감시 폴더 연결 정보를 저장하여 같은 식별 정보와 이름이 유지되는 동안 다시 자동 변환하지 않도록 합니다.</dd>
+            <dt>ZIP 생성 시 파일 내용</dt>
+            <dd>사용자가 선택한 파일·폴더를 ZIP으로 만들 때에는 원본의 내용 바이트를 <strong>기기 안에서 읽어</strong> 새 ZIP에 넣습니다. ZIP 내부의 한글 NFD 이름을 NFC로 정리하며 원본 파일은 변경하지 않습니다. 기존 ZIP을 입력해도 그 안의 파일을 자동으로 풀어 변환하는 기능은 아닙니다. 이름만 바꾸는 감시 기능과 ZIP 생성을 위한 로컬 내용 읽기는 서로 다른 처리입니다.</dd>
+          </dl>
+          <p><strong>네이티브 앱에는 계정·로그인, 파일 업로드, 사용자 정보의 자동 수집·전송, 분석·광고·추적 기능 또는 제3자 분석·광고 SDK가 없습니다.</strong> 네이티브 앱에 제3자 SDK를 통한 정보 수집도 없습니다. 앱의 샌드박스 권한에 네트워크 클라이언트 권한은 포함되어 있지 않습니다. 웹사이트 링크를 열면 외부 기본 브라우저로 이동하며, 그 이후의 방문은 아래 웹사이트 설명에 해당합니다.</p>
+        </section>
+
+        <section id="native-retention" class="content-section" aria-labelledby="native-retention-heading">
+          <h2 id="native-retention-heading">3. 로컬 보관과 기록 한도</h2>
+          <p>앱 설정, 감시 폴더 경로·북마크, ZIP 저장 위치 북마크, 변환 기록 및 재변환 제외 정보는 앱 샌드박스의 <code>Application Support/NFD2NFC/state.json</code>에 저장됩니다. 현재 앱의 전체 경로는 다음과 같습니다.</p>
+          <p><code>~/Library/Containers/com.pieroot.nfd2nfc/Data/Library/Application Support/NFD2NFC/state.json</code></p>
+          <ul>
+            <li>변환 기록은 <strong>최근 최대 1,000건</strong>을 유지하며, 한도를 넘으면 오래된 기록부터 제거합니다. 이는 건수 한도이지 1,000일 등 고정 보관기간이 아닙니다.</li>
+            <li>설정과 북마크 등은 변경하거나 해당 상태를 삭제할 때까지 로컬에 남습니다. 재변환 제외 정보는 기록 한도와 별도로 관리되며, 해당 감시 폴더를 제거하거나 전체 상태를 초기화하면 그에 해당하는 제외 정보도 제거됩니다.</li>
+            <li>감시 폴더를 제거해도 이미 남은 변환 기록 전체를 지우는 것은 아닙니다.</li>
+            <li>생성한 ZIP은 기본적으로 <code>~/Documents/NFD2NFC/</code>에 저장되며 사용자가 직접 삭제할 때까지 남습니다. 네이티브 ZIP에는 웹 변환기의 5분 만료 규칙이 적용되지 않습니다.</li>
+          </ul>
+          <p>원본 파일·ZIP 출력물·사용자가 만든 백업은 앱 상태 파일과 별개입니다. 앱 삭제나 재설치가 샌드박스 상태, 파일 또는 백업의 자동 삭제를 보장하지 않습니다.</p>
+        </section>
+
+        <section id="native-deletion" class="content-section" aria-labelledby="native-deletion-heading">
+          <h2 id="native-deletion-heading">4. 감시 중단·권한 철회·초기화 및 삭제</h2>
+          <h3>감시 폴더 제거와 macOS 권한 철회는 다릅니다</h3>
+          <p>앱의 <strong>실시간 감시</strong> 탭에서 해당 감시 폴더를 제거하면 그 폴더의 감시를 중단하고, 감시 목록의 경로·북마크 및 연결된 재변환 제외 정보를 제거하며 사용 중인 보안 범위 접근을 종료합니다. 원본 파일을 삭제하거나 이미 변환한 이름을 자동으로 되돌리지는 않습니다. 같은 폴더를 다시 추가하면 새 감시 항목으로 등록되므로 제거 전 변환 기록은 앱에서 되돌릴 수 없습니다.</p>
+          <p>감시 폴더 제거는 macOS에서 허용한 모든 접근 권한을 일괄 철회하는 기능이 아닙니다. ZIP 저장 위치의 별도 북마크나 변환 기록도 함께 모두 삭제되는 것은 아닙니다. 시스템 설정의 <strong>개인정보 보호 및 보안</strong>에서 앱에 대해 표시되는 파일 및 폴더 등 권한을 관리할 수 있으며, 표시되는 항목은 macOS 버전과 실제 허용한 권한에 따라 다릅니다. 저장된 앱 북마크를 포함하여 로컬 상태를 모두 없애려면 아래 초기화 방법을 사용하세요. 권한을 끄면 해당 위치를 감시하거나 ZIP을 저장하지 못할 수 있습니다.</p>
+          <h3>로컬 상태 전체 초기화</h3>
+          <p>현재 앱에는 변환 기록만 지우는 버튼이나 원격 삭제 기능이 없습니다. 설정·북마크·기록·제외 정보를 함께 초기화하려면 다음 순서로 진행하세요.</p>
+          <ol>
+            <li>로그인 시 자동 실행도 중단하려면 먼저 <strong>일반</strong> 탭에서 로그인 시 실행을 끄세요. 이 설정은 macOS가 관리하므로 상태 파일 삭제만으로 해제된다고 가정하지 마세요.</li>
+            <li>앱 또는 메뉴 막대 메뉴에서 앱을 <strong>종료</strong>하세요. 창 닫기나 Dock·메뉴 막대 아이콘 숨기기는 종료가 아닙니다. 아이콘이 모두 숨겨져 있다면 응용 프로그램에서 앱을 다시 열어 종료할 수 있습니다.</li>
+            <li>Finder의 <strong>이동 → 폴더로 이동…</strong>에서 <code>~/Library/Containers/com.pieroot.nfd2nfc/Data/Library/Application Support/NFD2NFC/</code>를 여세요.</li>
+            <li>필요하면 <code>state.json</code>을 먼저 별도 위치에 백업한 뒤, 해당 폴더의 <code>state.json</code>을 삭제하세요. 휴지통에 옮긴 파일과 별도 백업에도 정보가 남을 수 있으므로, 필요 없어진 사본은 사용자가 따로 삭제해야 합니다.</li>
+            <li>앱을 다시 실행하면 저장된 설정·감시 목록·기록·제외 정보 없이 시작합니다. 사용할 폴더와 ZIP 저장 위치에 대한 접근을 다시 허용해야 합니다.</li>
+          </ol>
+          <p class="notice">초기화는 변환한 파일명을 되돌리거나 원본·생성 ZIP을 삭제하지 않습니다. 되돌리기가 필요하다면 기록을 삭제하기 전에 가능한 항목을 개별적으로 되돌리세요. 제외 정보도 사라지므로 폴더를 다시 추가하면 이전에 되돌린 NFD 이름이 다시 변환될 수 있습니다. ZIP 파일은 Finder에서 별도로 삭제하세요. 개발자는 기기 안의 상태·원본·ZIP·백업을 원격으로 열람하거나 삭제할 수 없습니다.</p>
+        </section>
+
+        <section id="support-data" class="content-section" aria-labelledby="support-data-heading">
+          <h2 id="support-data-heading">5. 자발적 지원 문의</h2>
+          <p>앱은 진단 자료를 자동으로 보내지 않습니다. 사용자가 이메일 또는 GitHub 이슈로 문의하면 개발자가 해당 채널에서 제공된 정보를 받게 됩니다. 문의는 선택 사항이며, 문의하지 않아도 네이티브 앱의 로컬 기능을 사용할 수 있습니다.</p>
+          <dl class="definition-list">
+            <dt>받을 수 있는 정보</dt>
+            <dd>이메일 주소·발신자 표시명 등 연락 정보, GitHub 사용자명과 공개 프로필 정보, 문의 내용, 사용자가 자발적으로 첨부한 스크린샷·오류 메시지·진단 자료입니다. 자발적으로 공유한 자료에는 파일명·경로·macOS 및 앱 버전 등이 포함될 수 있습니다.</dd>
+            <dt>이용 목적</dt>
+            <dd>문의 답변, 문제 재현·원인 확인·수정, 문의 관련 후속 안내 및 개인정보 권리 요청의 처리를 위해 사용합니다. 문의 내용을 광고나 홍보 메시지 발송 목적으로 사용하지 않습니다.</dd>
+            <dt>보관과 삭제</dt>
+            <dd>문의 처리 및 필요한 후속 대응에 필요한 동안 보관하고, 목적을 달성하여 더 이상 필요하지 않은 개인정보는 삭제합니다. 고정된 일수의 자동 삭제 기능이나 일률적인 보관기간은 정하지 않습니다. 삭제 요청은 아래 이메일로 할 수 있으며, 개발자가 관리하는 문의 이메일·첨부파일·별도로 보관한 진단 자료 등 요청 범위의 정보를 확인하여 삭제하고 처리 결과를 안내합니다.</dd>
+          </dl>
+          <p>법령에 따른 보존 의무 등으로 요청을 전부 처리할 수 없는 경우에는 적용되는 이유와 범위를 안내합니다. 이 방침은 모든 문의에 특정 법정 보존기간이 적용된다고 정하지 않습니다. Gmail·GitHub가 자체적으로 보관하는 서비스 기록·백업이나 다른 사람이 복사한 공개 내용까지 개발자가 즉시 삭제할 수 있다는 보장은 없습니다.</p>
+          <h3>필요한 정보만 보내세요</h3>
+          <p>재현에 필요한 최소한의 설명을 보내고, 실제 문서 대신 개인정보가 없는 예시 파일명이나 합성 자료를 우선 사용하세요. 비밀번호·인증키·주민등록번호·금융정보·민감정보·타인의 개인정보는 보내지 마세요. 스크린샷과 로그의 사용자명, 전체 경로, 문서 내용도 가린 뒤 공유하세요. 전체 파일·전체 변환 기록·상태 파일을 제출하는 것은 앱 이용의 조건이 아닙니다.</p>
+          <p class="notice"><strong>GitHub 이슈는 공개됩니다.</strong> 사용자명, 작성 내용과 첨부 자료를 누구나 볼 수 있고 검색·복사할 수 있습니다. 이슈를 닫는 것만으로 내용이 삭제되지는 않습니다. 비공개로 다뤄야 할 문의나 삭제 요청은 <a href="mailto:pieroot.02@gmail.com">이메일</a>로 보내세요. 이메일은 공개 이슈 게시와는 다르지만 Gmail을 통해 전달·보관되며, 제3자 처리 없이 기기 안에서만 처리되는 채널은 아닙니다.</p>
+        </section>
+
+        <section id="website" class="content-section" aria-labelledby="website-heading">
+          <h2 id="website-heading">6. 웹사이트·호스팅·광고</h2>
+          <h3>GitHub Pages 호스팅</h3>
+          <p>이 웹사이트는 GitHub Pages를 통해 제공됩니다. 페이지·스타일·아이콘을 가져오는 요청에도 호스팅 제공자가 관여하며, GitHub는 IP 주소, 요청 시각, 브라우저·기기 정보 및 요청한 페이지 등 접속 정보를 자체 정책에 따라 처리할 수 있습니다. 정적 사이트라는 이유로 서버 접속 기록이 없거나 IP 주소가 전혀 처리되지 않는다고 보장하지 않습니다. 호스팅 기록의 구체적인 보관·삭제는 GitHub 정책과 절차에 따릅니다.</p>
+          <h3>홈페이지 브라우저 변환기</h3>
+          <p>별도의 웹 변환기 코드는 사용자가 선택한 파일을 브라우저 안에서 읽어 처리하며, 파일을 서버에 업로드하는 기능은 없습니다. 변환 코드가 사용자 파일을 localStorage, sessionStorage, IndexedDB, OPFS 또는 Cache에 영구 저장하지 않습니다. 결과의 임시 메모리·다운로드용 객체 URL에는 결과별 5분 만료가 적용되며, 사용자가 내려받은 파일은 직접 관리·삭제해야 합니다. 이 규칙은 브라우저의 모든 메모리나 기기 백업의 완전한 삭제를 보장하는 것은 아닙니다.</p>
+          <h3>운영 홈페이지의 Google AdSense</h3>
+          <p><strong>운영 홈페이지에는 Google AdSense 외부 광고 스크립트가 있습니다.</strong> Google 및 광고 파트너는 광고 제공·효과 측정·부정 이용 방지와 설정에 따른 맞춤 광고를 위해 쿠키 및 유사 기술, IP 주소, 페이지 URL, 브라우저·기기 정보와 광고 상호작용 정보를 처리할 수 있습니다. 이러한 처리는 네이티브 앱의 기능이나 데이터 수집이 아닙니다.</p>
+          <p>광고 스크립트와 웹 변환기는 같은 페이지의 JavaScript 실행 환경을 공유합니다. 변환 코드에 업로드 기능이 없다는 설명이 외부 스크립트와의 기술적 격리 또는 제3자의 파일명·내용 접근 불가능을 보장하지는 않습니다. 민감한 파일은 외부 광고 스크립트가 없는 네이티브 앱에서 처리하는 것을 권합니다.</p>
+          <p>브라우저 설정에서 쿠키·제3자 쿠키를 차단하거나 삭제할 수 있고, <a href="https://myadcenter.google.com/?hl=ko">Google 내 광고 센터</a>에서 맞춤 광고 설정을 관리할 수 있습니다. 맞춤 광고를 끄거나 쿠키를 차단해도 모든 광고 요청·IP 주소 처리·접속 기록이 없어지는 것은 아닙니다. 브라우저와 제공자의 설정에 따라 효과가 다르며, 이 페이지에 별도의 광고 동의·거부 버튼이 있는 것은 아닙니다.</p>
+          <h3>개인정보 처리방침·지원 페이지</h3>
+          <p>이 <strong>개인정보 처리방침 페이지와 <a href="/support/">지원 페이지</a>에는 광고·JavaScript·폼·외부 폰트·외부 이미지가 없습니다.</strong> 내용은 JavaScript 없이 모두 읽을 수 있고, 스타일과 아이콘은 같은 사이트의 자원을 사용합니다. 다만 페이지를 불러오는 호스팅 요청은 발생하며, 이메일이나 외부 정책·GitHub 링크를 사용하면 해당 외부 서비스로 이동합니다. 이 페이지를 방문하는 것만으로 홈페이지 방문 때 생성된 쿠키가 자동 삭제되지는 않습니다.</p>
+        </section>
+
+        <section id="external-services" class="content-section" aria-labelledby="external-services-heading">
+          <h2 id="external-services-heading">7. 외부 서비스와 제공자 정책</h2>
+          <p>네이티브 앱이 개발자에게 보내는 사용자 데이터가 없으므로, 네이티브 로컬 파일·상태를 개발자가 제3자에게 제공하거나 외부 처리업체에 전송하는 기능도 없습니다. 그러나 사용자가 선택한 지원 채널과 웹사이트 방문에는 다음 외부 서비스가 관여합니다. 이를 모두 앱이 자동 수집하는 정보로 묶거나, 반대로 모든 정보가 기기 안에만 남는다고 설명하지 않습니다.</p>
+          <ul>
+            <li><strong>Gmail / Google:</strong> 개발자 이메일로 보낸 연락 정보, 메시지·첨부 자료의 전달·보관 및 서비스 운영에 관여합니다. <a href="https://policies.google.com/privacy?hl=ko">Google 개인정보처리방침</a>을 확인하세요.</li>
+            <li><strong>GitHub:</strong> 공개 이슈의 계정 정보·작성 내용·첨부 자료 및 서비스 접속 정보를 처리합니다. GitHub Pages는 웹사이트 호스팅을 제공합니다. <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub 개인정보처리방침</a>과 <a href="https://docs.github.com/en/site-policy/privacy-policies/github-cookies">GitHub 쿠키 안내</a>를 확인하세요.</li>
+            <li><strong>Google AdSense 및 광고 파트너:</strong> 운영 홈페이지에서 광고 관련 정보를 처리할 수 있습니다. <a href="https://policies.google.com/technologies/partner-sites?hl=ko">Google 서비스를 사용하는 사이트·앱의 정보 처리 안내</a>와 <a href="https://policies.google.com/technologies/cookies?hl=ko">Google 쿠키 안내</a>를 확인하세요.</li>
+          </ul>
+          <p>외부 제공자의 처리에는 국외 처리가 포함될 수 있습니다. 실제 처리 위치·보유기간·삭제 절차는 이용하는 서비스와 제공자 정책에 따라 달라집니다. 각 제공자의 정책을 확인하고, 제공자가 자체적으로 관리하는 정보에 대해서는 해당 개인정보 문의 경로를 통해서도 권리를 행사할 수 있습니다.</p>
+        </section>
+
+        <section id="rights" class="content-section" aria-labelledby="rights-heading">
+          <h2 id="rights-heading">8. 이용자와 법정대리인의 권리</h2>
+          <p>대한민국 「개인정보 보호법」 등 적용되는 법령에 따라, 정보주체는 개발자가 보유·처리하는 본인의 개인정보에 대해 열람, 정정·삭제, 처리정지 및 동의에 근거한 처리의 동의 철회를 요청할 수 있습니다. 법정대리인 또는 적법하게 권한을 받은 대리인을 통해서도 요청할 수 있으며, 법령이 정한 제한이나 예외가 적용될 수 있습니다.</p>
+          <ol>
+            <li><a href="mailto:pieroot.02@gmail.com">pieroot.02@gmail.com</a>으로 요청 종류와 대상을 알려주세요. 이전 문의의 이메일 주소·대략적인 날짜 또는 이슈 주소 등 필요한 최소 정보만 포함하세요. 요청을 위해 비밀번호나 전체 신분증을 보내지 마세요.</li>
+            <li>타인의 정보가 공개되거나 삭제되지 않도록 본인·대리 권한 확인이 필요한 경우 최소한의 추가 확인을 요청할 수 있습니다.</li>
+            <li>개발자가 관리하는 정보의 범위와 적용 법령에 따라 요청을 처리하고 결과를 안내합니다. 처리할 수 없는 부분이 있으면 이유와 이용 가능한 경로를 안내합니다. 자동 처리나 특정 일수 내 모든 제공자 데이터 삭제를 보장하지 않습니다.</li>
+          </ol>
+          <p>기기 안의 파일·상태에는 <a href="#native-deletion">로컬 삭제 및 권한 관리 방법</a>이 적용됩니다. 개발자는 이를 열람하거나 대신 원격 삭제할 수 없습니다. 지원 정보를 더 보내지 않을 수 있으며, 처리정지·삭제로 인해 해당 문의의 추가 진단이나 답변이 제한될 수 있지만 네이티브 앱의 로컬 사용을 위한 계정 제출 의무는 없습니다.</p>
+          <p>개인정보 침해 상담이나 분쟁 해결이 필요한 경우 <a href="https://privacy.kisa.or.kr/">개인정보침해 신고센터</a> 또는 <a href="https://www.kopico.go.kr/">개인정보분쟁조정위원회</a>의 안내도 이용할 수 있습니다.</p>
+        </section>
+
+        <section id="protection" class="content-section" aria-labelledby="protection-heading">
+          <h2 id="protection-heading">9. 정보 최소화와 보호</h2>
+          <p>네이티브 앱은 macOS App Sandbox와 사용자가 선택한 위치에 대한 보안 범위 접근을 사용하며, 로컬 상태 파일을 개발자 서버와 동기화하지 않습니다. 이는 별도의 앱 자체 암호화나 모든 위험의 제거를 뜻하지 않습니다. 사용자의 Mac 계정 접근, 디스크·백업 보호 및 지원 자료 공유 여부도 정보 보호에 영향을 줍니다.</p>
+          <p>지원 문의에서는 필요한 정보만 요청·사용하고, 개인정보가 담긴 문의 자료를 그대로 공개 이슈에 재게시하지 않습니다. 공개 버그 설명에는 개인 식별 내용을 제외하세요. 로컬 상태 초기화, 지원 자료 삭제, 제공자 자체 기록의 삭제는 서로 다른 범위이며 하나의 조치가 나머지 모두를 삭제하지 않습니다.</p>
+        </section>
+
+        <section id="changes-contact" class="content-section" aria-labelledby="changes-contact-heading">
+          <h2 id="changes-contact-heading">10. 변경 안내와 연락처</h2>
+          <p>앱 기능, 지원 채널, 웹사이트 외부 서비스 또는 관련 법령의 변화로 방침을 변경하면 이 페이지에 변경 내용과 시행일·최종 수정일을 표시합니다. 개인정보 권리에 중대한 영향을 주는 변경은 이용자가 확인할 수 있도록 안내하며, 별도의 고지나 동의가 법령상 필요한 경우에는 그 절차를 따릅니다.</p>
+          <div class="contact-card">
+            <h3>개인정보 문의·권리 요청</h3>
+            <p>담당 개발자: jung-geun</p>
+            <p>문의·정정·삭제·처리정지 요청은 공개 이슈 대신 아래 이메일로 보내세요.</p>
+            <div class="contact-actions">
+              <a class="action-link" href="mailto:pieroot.02@gmail.com">pieroot.02@gmail.com</a>
+              <a class="action-link" href="/support/">지원 안내</a>
+            </div>
+          </div>
+          <h3>관련 공식 자료</h3>
+          <ul>
+            <li><a href="https://www.law.go.kr/LSW/lsLinkCommonInfo.do?lsJoLnkSeq=1033215151">국가법령정보센터 — 개인정보 보호법 제30조(개인정보 처리방침의 수립 및 공개)</a></li>
+            <li><a href="https://www.law.go.kr/법령/개인정보보호법">국가법령정보센터 — 개인정보 보호법</a></li>
+            <li><a href="https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&amp;mCode=D010030000&amp;nttId=12018">개인정보보호위원회 — 개인정보 처리방침 작성지침(2026.4. 개정)</a></li>
+          </ul>
+        </section>
+      </main>
+
+      <footer>
+        <p>NFD2NFC · 기기 내 파일 처리와 웹사이트·지원 채널을 구분하여 안내합니다.</p>
+        <nav aria-label="하단 탐색">
+          <a href="/">홈</a>
+          <a href="/privacy/" aria-current="page">개인정보 처리방침</a>
+          <a href="/support/">지원</a>
+          <a href="mailto:pieroot.02@gmail.com">pieroot.02@gmail.com</a>
+        </nav>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 {
   "name": "@pieroot/nfd2nfc",
   "version": "2.0.3",
-  "description": "macOS 한글 파일명 NFD→NFC 실시간 변환 트레이 앱 + CLI + 라이브러리",
+  "description": "macOS 네이티브 한글 파일명 NFD→NFC 변환 앱 + CLI + 라이브러리",
   "main": "out/lib/index.js",
   "types": "out/lib/index.d.ts",
   "exports": {
@@ -22,23 +22,25 @@
     "LICENSE"
   ],
   "scripts": {
-    "dev": "electron-vite dev",
-    "build:app": "electron-vite build && electron-builder",
+    "dev": "open macOS/NFD2NFC.xcodeproj",
+    "build:app": "xcodebuild -project macOS/NFD2NFC.xcodeproj -scheme NFD2NFC -configuration Release -derivedDataPath .build/xcode CODE_SIGN_IDENTITY=- build",
     "build:cli": "tsc --project tsconfig.cli.json",
     "build:lib": "tsc --project tsconfig.lib.json",
     "build": "npm run build:cli && npm run build:lib && npm run build:app",
     "prepublishOnly": "npm run build:cli && npm run build:lib && chmod +x out/cli/index.js",
-    "preview": "electron-vite preview",
+    "preview": "open .build/xcode/Build/Products/Release/NFD2NFC.app",
     "web:dev": "vite --config web/vite.config.ts",
     "web:build": "vite build --config web/vite.config.ts",
     "web:preview": "vite preview --config web/vite.config.ts",
     "test": "vitest run",
+    "test:native": "make test",
+    "native:archive": "xcodebuild -project macOS/NFD2NFC.xcodeproj -scheme NFD2NFC -configuration Release -destination generic/platform=macOS -archivePath .build/NFD2NFC.xcarchive archive",
+    "native:export": "xcodebuild -exportArchive -archivePath .build/NFD2NFC.xcarchive -exportOptionsPlist macOS/ExportOptions.plist -exportPath .build/app-store",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit && tsc --noEmit --project tsconfig.cli.json && tsc --noEmit --project tsconfig.lib.json"
   },
   "dependencies": {
-    "chokidar": "^3.6.0",
     "fflate": "^0.8.2",
     "yargs": "^17.7.2"
   },
@@ -50,9 +52,6 @@
     "@typescript-eslint/eslint-plugin": "^7.7.0",
     "@typescript-eslint/parser": "^7.7.0",
     "@vitejs/plugin-react": "^5.1.4",
-    "electron": "^39.8.5",
-    "electron-builder": "^26.15.3",
-    "electron-vite": "^3.1.0",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
     "react": "^19.2.6",
@@ -78,39 +77,7 @@
     "Normalization",
     "macOS",
     "korean",
-    "electron",
-    "tray"
-  ],
-  "build": {
-    "appId": "com.pieroot.nfd2nfc",
-    "productName": "NFD2NFC",
-    "extraMetadata": {
-      "main": "out/main/index.js"
-    },
-    "files": [
-      "out/main/**",
-      "out/preload/**",
-      "out/renderer/**",
-      "resources/**",
-      "package.json"
-    ],
-    "mac": {
-      "category": "public.app-category.utilities",
-      "icon": "resources/icon.icns",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "arm64",
-            "x64"
-          ]
-        }
-      ]
-    },
-    "directories": {
-      "buildResources": "resources",
-      "output": "dist"
-    },
-    "publish": null
-  }
+    "SwiftUI",
+    "menubar"
+  ]
 }
