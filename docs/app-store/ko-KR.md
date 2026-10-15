@@ -33,10 +33,10 @@ Apple Help는 키워드를 **100자 아닌 100바이트**, 심사 메모도 **4,
 | 앱 이름 | 19 | 33 | 30자 |
 | 부제 | 19 | 41 | 30자 |
 | 프로모션 텍스트 | 112 | 260 | 170자 |
-| 설명 | 1,444 | 3,344 | 4,000자 |
+| 설명 | 1,461 | 3,383 | 4,000자 |
 | 키워드 | 34 | 90 | 100바이트 |
 | 새로운 기능 | 474 | 953 | 4,000자 |
-| 심사 메모 | 3,699 | 3,739 | 4,000바이트 |
+| 심사 메모 | 3,712 | 3,752 | 4,000바이트 |
 | 지원 URL | 28 | 28 | 이 표의 문자 제한 대상 아님 |
 | 개인정보 처리방침 URL | 28 | 28 | 이 표의 문자 제한 대상 아님 |
 | 마케팅 URL | 20 | 20 | 이 표의 문자 제한 대상 아님 |
@@ -93,7 +93,7 @@ NFD2NFC는 macOS에서 분리된 한글 파일·폴더 이름(NFD)을 조합된 
 App Sandbox를 사용하며, 감시할 폴더와 ZIP 저장 위치는 사용자가 직접 선택해 접근을 허용합니다. 네이티브 앱은 파일을 서버에 업로드하지 않으며 계정이나 로그인이 필요하지 않습니다. 설정, 선택한 경로, 접근 권한 정보와 변환 기록은 Mac의 로컬 앱 컨테이너에 저장합니다. 네이티브 앱에는 광고나 분석 SDK가 없습니다. 외부 웹사이트 방문과 사용자가 직접 보내는 지원 문의는 별도 서비스의 개인정보 처리 대상입니다.
 
 사용 전 확인하세요
-실시간 감시는 원본 이름을 직접 바꾸므로 중요한 자료는 먼저 백업하고 별도의 테스트 폴더에서 확인하세요. 같은 이름의 다른 항목을 덮어쓰지 않으며 숨김 항목과 심볼릭 링크는 감시 변환에서 제외합니다. ZIP 생성은 숨김 파일과 빈 폴더를 포함하지만 심볼릭 링크 등 지원하지 않는 항목이 있으면 오류를 표시합니다. Finder에서 보이는 글자 모양만으로 정규화 여부를 판단할 수 없으며, 압축을 해제한 파일명은 운영체제에 따라 다시 분해될 수 있습니다.
+실시간 감시는 원본 이름을 직접 바꾸므로 중요한 자료는 먼저 백업하고 별도의 테스트 폴더에서 확인하세요. 같은 이름의 다른 항목을 덮어쓰지 않으며 이름이 마침표(.)로 시작하는 숨김 항목과 심볼릭 링크는 감시 변환에서 제외합니다. ZIP 생성은 숨김 파일과 빈 폴더를 포함하지만 심볼릭 링크 등 지원하지 않는 항목이 있으면 오류를 표시합니다. Finder에서 보이는 글자 모양만으로 정규화 여부를 판단할 수 없으며, 압축을 해제한 파일명은 운영체제에 따라 다시 분해될 수 있습니다.
 ```
 
 ### 키워드
@@ -153,7 +153,7 @@ https://nfd2nfc.com/
 
 ## 5. App Review Notes — 영어 복사본
 
-App Review Information → Notes. 아래 전체는 **3,699자 / UTF-8 3,739바이트**로 4,000바이트 이내입니다. 한국어 UI의 탭 순서와 실제 테스트 명령을 포함합니다. Python 3는 리뷰용 샘플 생성·코드 포인트 확인 도구일 뿐 앱 설치 요건이 아닙니다. 실제 파일을 바꾸므로 리뷰어에게 별도 테스트 폴더만 선택하도록 안내합니다. 이 작업에서 첫 번째 Python 샘플 생성 명령을 실행해 실제 NFD 이름과 샘플 내용을 확인했습니다. 이는 아래 네이티브 감시·ZIP 심사 시나리오 전체의 통과를 뜻하지 않습니다.
+App Review Information → Notes. 아래 전체는 **3,712자 / UTF-8 3,752바이트**로 4,000바이트 이내입니다. 한국어 UI의 탭 순서와 실제 테스트 명령을 포함합니다. Python 3는 리뷰용 샘플 생성·코드 포인트 확인 도구일 뿐 앱 설치 요건이 아닙니다. 실제 파일을 바꾸므로 리뷰어에게 별도 테스트 폴더만 선택하도록 안내합니다. 이 작업에서 첫 번째 Python 샘플 생성 명령을 실행해 실제 NFD 이름과 샘플 내용을 확인했습니다. 이는 아래 네이티브 감시·ZIP 심사 시나리오 전체의 통과를 뜻하지 않습니다.
 
 ```text
 NFD2NFC 3.0.0 is a native macOS 13+ SwiftUI/AppKit utility. No account, sign-in, credentials, subscription, or backend is required. Python 3 is only for the optional test below, not an app runtime dependency.
@@ -171,7 +171,7 @@ assert actual != unicodedata.normalize("NFC", actual)
 print(p)
 print("Before:", [hex(ord(c)) for c in actual])
 PY
-Copy the printed folder path. In the Watching tab (first tab), click Add Folder and choose only that folder. The initial scan and subsequent filesystem events normalize Hangul NFD names recursively. The selected root is not renamed. Hidden entries and symlinks are excluded; collisions do not overwrite files.
+Copy the printed folder path. In the Watching tab (first tab), click Add Folder and choose only that folder. The initial scan and subsequent filesystem events normalize Hangul NFD names recursively. The selected root is not renamed. Dot-prefixed hidden entries and symlinks are excluded; collisions do not overwrite files.
 
 2. After conversion, verify actual directory-entry code points and unchanged content, not Finder's visual rendering:
 python3 -c 'from pathlib import Path
