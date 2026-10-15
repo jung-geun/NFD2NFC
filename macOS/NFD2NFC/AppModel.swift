@@ -307,10 +307,12 @@ final class AppModel: ObservableObject {
     private func refreshMonitoring() {
         guard !shuttingDown else { return }
         var next: [UUID: URL] = [:]
+        var retained = Set<UUID>()
         for index in directories.indices {
             let directory = directories[index]
             if let current = scopes[directory.id], FileManager.default.fileExists(atPath: current.path) {
                 next[directory.id] = current
+                retained.insert(directory.id)
                 continue
             }
             do {
@@ -337,7 +339,8 @@ final class AppModel: ObservableObject {
                 if next[directory.id] != nil { directoryErrors.removeValue(forKey: directory.id) }
             } catch { directoryErrors[directory.id] = error.localizedDescription }
         }
-        let released = scopes.filter { next[$0.key] == nil }.map(\.value)
+        // A moved folder resolves a new scope under the same ID; the replaced scope must be released too.
+        let released = scopes.filter { !retained.contains($0.key) }.map(\.value)
         scopes = next
         monitor.setRoots(next.map { WatchRoot(id: $0.key, url: $0.value) }, exclusions: state.exclusions) {
             released.forEach { $0.stopAccessingSecurityScopedResource() }

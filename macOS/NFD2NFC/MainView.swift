@@ -104,7 +104,7 @@ struct MainView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("접근 권한이 만료되었다면 이 폴더를 제거한 뒤 다시 추가하세요.")
+                    Text("접근 권한이 만료되었다면 제거하지 말고 ‘폴더 추가’에서 이 폴더를 다시 선택하세요.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
