@@ -1,39 +1,25 @@
-name: Release
+name: Native macOS
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+  push:
+    paths:
+      - 'macOS/**'
+      - 'resources/icon.icns'
+      - '.github/workflows/release.yml'
+  pull_request:
+    paths:
+      - 'macOS/**'
+      - 'resources/icon.icns'
+      - '.github/workflows/release.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build-and-release:
+  native:
     runs-on: macos-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build:cli && npm run build:lib && npm run build:app -- --publish never
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
-
-      - name: List dist
-        run: ls -lh dist/
-
-      - name: Upload DMG assets
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
-            dist/*.dmg
+      - name: Build universal sandboxed app and run native regressions
+        run: make test

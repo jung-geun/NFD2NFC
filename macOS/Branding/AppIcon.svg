@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <title>NFD2NFC</title><desc>Separated fragments joined into one composed N.</desc>
+  <defs>
+    <linearGradient id="tile" x1="0.25" y1="0" x2="0.75" y2="1"><stop stop-color="#397cf5"/><stop offset="1" stop-color="#174dd2"/></linearGradient>
+    <linearGradient id="porcelain" x2="0.4" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#edf4ff"/></linearGradient>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%"><feDropShadow dy="16" stdDeviation="14" flood-color="#102a63" flood-opacity=".25"/></filter>
+  </defs>
+  <rect x="96" y="88" width="832" height="832" rx="182" fill="url(#tile)" filter="url(#shadow)"/>
+  <rect x="99" y="91" width="826" height="826" rx="179" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="3"/>
+  <g transform="translate(174 176) scale(2.56)" fill="url(#porcelain)">
+    <path d="M24.0 88.0 L24.0 58.0 C24.0 39.0 39.0 24.0 58.0 24.0 C73.0 24.0 86.0 32.0 93.0 44.0 L24.0 88.0 Z"/><path d="M24.0 101.0 L97.0 55.0 L172.0 137.0 L172.0 58.0 C172.0 39.0 187.0 24.0 206.0 24.0 C225.0 24.0 240.0 39.0 240.0 58.0 L240.0 198.0 C240.0 217.0 225.0 232.0 206.0 232.0 C196.0 232.0 187.0 228.0 180.0 220.0 L92.0 122.0 L92.0 198.0 C92.0 217.0 77.0 232.0 58.0 232.0 C39.0 232.0 24.0 217.0 24.0 198.0 L24.0 101.0 Z"/>
+  </g>
+</svg>

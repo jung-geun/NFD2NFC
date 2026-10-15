@@ -211,3 +211,12 @@ dist-web
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,git,visualstudiocode,node
 .gstack/
+
+# Native macOS / Xcode
+.build/
+DerivedData/
+*.xcarchive/
+*.xcresult/
+xcuserdata/
+.swiftpm/
+dist/
