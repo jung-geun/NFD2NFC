@@ -9,7 +9,8 @@ export function prerender(): Plugin {
     apply: 'build',
     transformIndexHtml: {
       order: 'post',
-      async handler(html) {
+      async handler(html, context) {
+        if (context.path !== '/index.html') return html;
         const server = await createServer({
           configFile: false,
           root: __dirname,
