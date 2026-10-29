@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     prerender(),
     {
-      name: 'web-page-policy-and-ads',
+      name: 'web-page-policy-and-google-tags',
       apply: 'build',
       transformIndexHtml: {
         order: 'post',
@@ -39,6 +39,24 @@ export default defineConfig({
 
           return [
             protections,
+            {
+              tag: 'script',
+              attrs: {
+                async: true,
+                src: 'https://www.googletagmanager.com/gtag/js?id=G-LVC6YHJFGK',
+              },
+              injectTo: 'head-prepend',
+            },
+            {
+              tag: 'script',
+              children: `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', 'G-LVC6YHJFGK');
+              `,
+              injectTo: 'head-prepend',
+            },
             // Requires an approved AdSense Sites entry and Auto ads enabled in Ads.
             // Bottom overlays override the dashboard's anchor-position setting.
             {
