@@ -56,7 +56,7 @@ npm install /absolute/path/to/NFD2NFC
 3. **출력 파일** 목록에서 완료된 **압축 파일명을 클릭**해 각각 다운로드합니다. 파일명·크기·남은 시간을 한 행에 표시하며 별도 다운로드 카드나 버튼은 없습니다. 결과별로 생성 시점부터 **5분**만 유지하며, `04:59 남음` 형식의 카운트다운을 초 단위로 표시합니다. 새 파일을 추가해도 앞선 결과의 만료 시각은 연장되지 않습니다. 만료 즉시 해당 항목의 임시 파일 참조·다운로드 URL을 해제하며, 행은 먼지처럼 흩어진 뒤 목록에서 자동으로 제거합니다. 행 끝의 **목록에서 삭제(×)**에도 같은 소멸 효과를 적용합니다. 시스템의 동작 줄이기 설정이나 백그라운드 탭에서는 효과 없이 바로 제거합니다. 페이지를 떠나면 모든 결과와 대기 항목을 정리합니다. 원본 파일은 변경하지 않습니다.
 
 - 출력 ZIP은 입력 이름을 기준으로 만듭니다. 일반 파일은 확장자까지 보존해 `보고서.pdf.zip`, ZIP은 마지막 `.zip` 확장자를 중복하지 않아 `자료.zip`, 폴더는 폴더명 뒤에 `.zip`을 붙여 `프로젝트 자료.zip`이 됩니다. 한글 NFD 이름은 NFC로 정리합니다. 같은 이름을 다시 추가해도 각 결과와 다운로드 링크는 독립적이며, 다운로드한 파일의 이름 충돌 처리는 브라우저 설정을 따릅니다.
-- 파일 선택은 **서버 업로드가 아닙니다**. 변환 코드는 File API로 기기 안에서 읽고 ZIP을 만들며, `localStorage`·`sessionStorage`·IndexedDB·OPFS·Cache API에 사용자 파일을 저장하지 않습니다. 운영 페이지의 Google AdSense 광고는 별도로 외부 통신·쿠키·기기 정보 등을 사용할 수 있고 페이지와 같은 실행 환경을 공유합니다. 따라서 CSP로 모든 네트워크 전송을 차단한다고 보장하지 않습니다. 외부 광고 스크립트 없이 민감한 파일을 처리하려면 로컬 CLI를 이용하세요.
+- 파일 선택은 **서버 업로드가 아닙니다**. 변환 코드는 File API로 기기 안에서 읽고 ZIP을 만들며, `localStorage`·`sessionStorage`·IndexedDB·OPFS·Cache API에 사용자 파일을 저장하지 않습니다. 운영 페이지의 Google AdSense 광고와 Google Analytics 방문·이용 통계 측정은 별도로 외부 통신·쿠키·기기 정보 등을 사용할 수 있고 페이지와 같은 실행 환경을 공유합니다. 따라서 CSP로 모든 네트워크 전송을 차단한다고 보장하지 않습니다. 외부 광고·분석 스크립트 없이 민감한 파일을 처리하려면 로컬 CLI를 이용하세요.
 - **각 변환 항목별로** 선택한 파일의 합계, ZIP 해제 후 파일의 합계, 생성 ZIP의 크기를 **각각 100MiB(104,857,600바이트)**로 제한합니다. 서로 다른 최상위 파일·ZIP·폴더는 별도 항목이며, 한 폴더 안의 파일·ZIP은 합산합니다. ZIP 해제 크기는 본문을 풀기 전에 검사합니다. ZIP 헤더도 출력 크기에 포함되므로 입력이 정확히 100MiB이면 결과는 제한을 넘을 수 있습니다. 더 큰 자료는 CLI·데스크톱 앱을 이용해주세요.
 - 메모리 부담을 줄이기 위해 변환은 한 번에 하나씩 진행합니다. 백그라운드 탭에서 카운트다운 갱신을 멈추며, 탭 복귀·포커스·페이지 복원·다운로드 클릭 시 항목별 만료 시각을 다시 검사합니다. 수동 삭제의 소멸 효과가 끝난 뒤에는 Safari 다운로드 시작을 위해 URL 해제를 최대 1초 늦추며, 지연 해제 중인 URL도 페이지를 떠나면 즉시 해제합니다. 만료된 URL은 소멸 효과를 기다리지 않고 즉시 해제합니다. 여러 결과의 실제 메모리 사용량과 회수 시점은 기기·브라우저에 따라 달라집니다. **사용자가 다운로드한 파일은 자동 삭제할 수 없습니다**.
 - [GitHub Pages 공식 제한](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)은 게시 사이트 1GB, 월 전송량 100GB(soft limit)입니다. 변환 파일은 GitHub에 저장하거나 전송하지 않으므로 이 용량에 포함되지 않습니다. [브라우저 Web Storage](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria#web_storage)의 origin당 `localStorage` 약 5MiB 제한은 서버 용량과 별개이며, 이 변환기는 파일 보관에 사용하지 않습니다.
@@ -179,16 +179,17 @@ Debug·Release의 **Standalone Icon File Behavior**는 **All**(`ASSETCATALOG_COM
 - SwiftUI 화면·AppKit 메뉴 막대, 단일 직렬 FSEvents 감시, security-scoped bookmark, identity 검증 Undo, 묶음·원자적 상태 저장으로 교체.
 - 원본을 변경하지 않는 메뉴 막대 NFC ZIP 기능, 독립 아이콘 숨기기, 실제 시스템 로그인 항목 등록 추가.
 
-## 웹 배포 · 광고 · 검색 노출
+## 웹 배포 · 광고 · 분석 · 검색 노출
 
 - 공개 주소는 **https://nfd2nfc.com/** 입니다. `web/public/CNAME`, canonical, Open Graph, JSON-LD, sitemap의 주소를 이 도메인에 맞춥니다. GitHub Pages의 Custom domain도 `nfd2nfc.com`인지 확인하세요.
 - `npm run web:build`는 초기 변환 화면·웹 사용법·CLI 설치법·FAQ를 **정적 HTML로 미리 렌더링**합니다. 브라우저는 이를 hydrate해 기존 변환 기능을 이어받습니다. JavaScript를 실행하지 않는 크롤러도 소개와 사용법을 읽을 수 있습니다. 개발 서버는 클라이언트 렌더링을 사용합니다.
 - 같은 빌드에서 `/privacy/`, `/support/`를 독립적인 정적 HTML로 내보냅니다. 두 안내 페이지에는 광고·JavaScript·폼·외부 폰트가 없으며, JavaScript 없이 본문과 FAQ를 읽을 수 있습니다. 스타일과 아이콘은 같은 사이트에서 제공하며 호스팅 접속 기록은 별도입니다. sitemap에도 두 페이지를 포함합니다.
 - 운영 빌드의 **변환기 홈페이지에서만** monolog과 같은 AdSense 게시자 `ca-pub-6070999186513755`의 자동 광고 코드를 한 번 로드합니다. `web/public/ads.txt`에 동일한 게시자를 선언합니다. 수동 슬롯 ID나 빈 광고 박스는 사용하지 않습니다. 개발 서버와 개인정보·지원 페이지에는 광고 코드를 넣지 않습니다.
+- 운영 빌드의 **변환기 홈페이지에서만** Google Analytics 4 태그 `G-LVC6YHJFGK`를 `<head>`에 한 번 초기화합니다. 기존 AdSense와 같은 `web/vite.config.ts` 빌드 훅에서 삽입하므로 개발 서버와 `/privacy/`·`/support/`에는 분석 스크립트가 없습니다. 선택한 파일의 이름·경로·내용을 별도 Analytics 이벤트나 매개변수로 보내지 않습니다. 배포 후 브라우저에서 `gtag/js?id=G-LVC6YHJFGK` 로드와 동일한 `tid`의 `g/collect` 요청을 확인하고, 실제 집계는 Google Analytics 실시간 보고서에서 확인하세요.
 - monolog과 같이 `data-overlays="bottom"`으로 앵커 광고를 하단에 고정합니다. 이 속성은 AdSense의 앵커 위치 설정을 덮어쓰며, 계정에서 앵커 광고를 꺼도 활성화할 수 있습니다. 앵커 광고를 끄려면 로더의 이 속성을 제거한 뒤 계정 설정을 사용하세요. [공식 앵커 동작 안내](https://support.google.com/adsense/answer/7478225)
 - AdSense에서 **nfd2nfc.com 등록·승인과 Auto ads 활성화**를 확인하세요. 변환 조작을 방해하지 않도록 광고 미리보기에서 `#converter` 영역을 제외하는 설정을 권장합니다. 실제 광고 위치·빈도·게재 여부는 Google이 결정하며 코드만으로 보장하지 않습니다. [Auto ads 설정](https://support.google.com/adsense/answer/9261307)
 - CSP는 `form-action 'none'`, `object-src 'none'`, `base-uri 'self'`, `worker-src 'self' blob:`를 유지합니다. 광고 통신을 막던 `connect-src 'none'` 등 리소스 제한은 제거했습니다. 정적 Pages에서 고정 nonce를 만들거나, 변경되는 Google 광고 도메인을 고정 목록으로 제한하지 않습니다. [AdSense CSP 공식 안내](https://support.google.com/adsense/answer/16283098)
-- 페이지 하단에 개인정보·광고 처리 안내를 제공합니다. EEA·영국·스위스 사용자에게 개인 맞춤 광고를 제공하려면 AdSense의 개인정보 보호 및 메시지에서 Google 인증 CMP와 IAB TCF 통합 등 적용되는 동의 요건을 설정해야 합니다. [Google 동의 관리 요건](https://support.google.com/adsense/answer/13554116)
+- 페이지 하단과 `/privacy/`에 개인정보·광고·분석 처리 안내를 제공합니다. EEA·영국·스위스 사용자에게 개인 맞춤 광고를 제공하려면 AdSense의 개인정보 보호 및 메시지에서 Google 인증 CMP와 IAB TCF 통합 등 적용되는 동의 요건을 설정해야 합니다. Analytics 쿠키·분석에도 방문자 지역에 따른 고지·동의 요건을 별도로 확인해야 하며, 태그 설치만으로 동의 관리가 구성되지는 않습니다. [Google 동의 관리 요건](https://support.google.com/adsense/answer/13554116)
 - SEO/AEO는 설명적인 한국어 제목·본문, 질문별 답변, 정확한 `WebSite`/`WebApplication` 구조화 데이터, 크롤링 허용, canonical과 sitemap으로 대응합니다. 존재하지 않는 평점·리뷰·FAQ 리치 결과를 꾸미거나 별도 AI 전용 파일을 추가하지 않습니다. [Google AI 검색 가이드](https://developers.google.com/search/docs/appearance/ai-features), [OpenAI 검색 크롤러 안내](https://developers.openai.com/api/docs/bots)
 - 배포 후 Google Search Console·Bing Webmaster Tools·네이버 서치어드바이저에서 새 도메인의 소유권을 확인하고 **https://nfd2nfc.com/sitemap.xml**을 제출하세요. 인증값은 임의로 생성하지 않습니다. 이전 도메인을 운영하는 호스팅/DNS 제공자에서 새 도메인으로 301/308 리다이렉트를 설정하고, 해당되는 경우 Search Console 주소 변경도 제출하세요. CNAME 파일만으로 이전 별도 호스트의 리다이렉트를 설정할 수는 없습니다. [도메인 이전 공식 안내](https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes)
 - 메타데이터·sitemap·크롤링 허용은 검색 순위, 색인, AI 답변 인용을 보장하지 않습니다.

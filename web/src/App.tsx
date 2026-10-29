@@ -188,10 +188,10 @@ nfd2nfc dir "./my-folder" --recursive`}</code></pre>
           <a href="/support/">지원 및 문의</a>
         </nav>
         <details id="privacy" className="privacy-disclosure">
-          <summary>개인정보 및 광고 안내</summary>
-          <p>변환 코드는 선택한 파일을 서버로 전송하지 않습니다. Google AdSense 광고는 별도로 외부 네트워크 요청을 보내며, Google과 광고 파트너는 쿠키·IP 주소·기기 정보 등을 광고 제공 및 측정에 사용할 수 있습니다.</p>
-          <p>광고 스크립트는 페이지와 같은 실행 환경을 공유합니다. 외부 스크립트 없이 민감한 파일을 처리하려면 로컬 CLI를 이용하세요.</p>
-          <p>광고 서비스의 데이터 처리는 <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">Google의 파트너 사이트 데이터 사용 안내</a>를 확인하세요.</p>
+          <summary>개인정보·광고·분석 안내</summary>
+          <p>변환 코드는 선택한 파일을 서버로 전송하지 않습니다. 운영 홈페이지의 Google Analytics는 방문·이용 통계를 측정하며 쿠키와 페이지 URL·브라우저·기기 정보 등을 처리할 수 있습니다. Google AdSense 광고도 별도로 외부 네트워크 요청을 보내며, Google과 광고 파트너는 쿠키·IP 주소·기기 정보 등을 광고 제공 및 측정에 사용할 수 있습니다.</p>
+          <p>광고·분석 스크립트는 페이지와 같은 실행 환경을 공유합니다. 외부 스크립트 없이 민감한 파일을 처리하려면 로컬 CLI를 이용하세요.</p>
+          <p>광고·분석 서비스의 데이터 처리는 <a href="/privacy/#website">개인정보 처리방침</a>과 <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">Google의 파트너 사이트 데이터 사용 안내</a>를 확인하세요.</p>
         </details>
       </footer>
     </div>
