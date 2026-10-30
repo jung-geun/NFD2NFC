@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#2563eb"/>
-  <path d="M9 5h9l5 5v17H9z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M18 5v6h5M12 19h8m-3-3 3 3-3 3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><title>NFD2NFC</title><desc>Separated fragments joined into one composed N.</desc><g fill="#2563eb"><path d="M24.0 88.0 L24.0 58.0 C24.0 39.0 39.0 24.0 58.0 24.0 C73.0 24.0 86.0 32.0 93.0 44.0 L24.0 88.0 Z"/><path d="M24.0 101.0 L97.0 55.0 L172.0 137.0 L172.0 58.0 C172.0 39.0 187.0 24.0 206.0 24.0 C225.0 24.0 240.0 39.0 240.0 58.0 L240.0 198.0 C240.0 217.0 225.0 232.0 206.0 232.0 C196.0 232.0 187.0 228.0 180.0 220.0 L92.0 122.0 L92.0 198.0 C92.0 217.0 77.0 232.0 58.0 232.0 C39.0 232.0 24.0 217.0 24.0 198.0 L24.0 101.0 Z"/></g></svg>

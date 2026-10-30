@@ -6,11 +6,15 @@ on:
     paths:
       - 'macOS/**'
       - 'resources/icon.icns'
+      - 'Makefile'
+      - 'package.json'
       - '.github/workflows/release.yml'
   pull_request:
     paths:
       - 'macOS/**'
       - 'resources/icon.icns'
+      - 'Makefile'
+      - 'package.json'
       - '.github/workflows/release.yml'
 
 permissions:

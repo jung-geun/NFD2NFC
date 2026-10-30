@@ -151,9 +151,13 @@ npx tsc --noEmit --project web/tsconfig.json
 npm test
 ```
 
-`make build` 결과는 `.build/xcode/Build/Products/Release/NFD2NFC.app`, `make archive` 결과는 `.build/NFD2NFC.xcarchive`입니다. Release 앱은 Apple Silicon·Intel universal 빌드입니다. Xcode 프로젝트·`macOS/ExportOptions.plist`의 팀은 기존 todo 프로젝트와 같은 `VQXGRP23X5`, 앱 식별자는 `com.pieroot.nfd2nfc`입니다. 다른 계정으로 배포할 때는 두 파일의 팀을 함께 변경하고, App Store Connect에서 같은 앱 식별자의 macOS 앱과 버전 3.0.0을 등록하세요. 유효한 배포 서명·스토어 프로비저닝과 개인정보 처리방침 URL·스토어 메타데이터·스크린샷을 준비한 뒤 Organizer의 **Distribute App → App Store Connect**로 검증·업로드합니다. 업로드·심사는 이 저장소의 빌드 성공과 별개입니다.
+`make build` 결과는 `.build/xcode/Build/Products/Release/NFD2NFC.app`, `make archive` 결과는 `.build/NFD2NFC.xcarchive`입니다. Release 앱은 Apple Silicon·Intel universal 빌드입니다. Xcode 프로젝트·`macOS/ExportOptions.plist`의 팀은 기존 todo 프로젝트와 같은 `VQXGRP23X5`, 앱 식별자는 `com.pieroot.nfd2nfc`입니다. 다른 계정으로 배포할 때는 두 파일의 팀을 함께 변경하고, App Store Connect에서 같은 앱 식별자의 macOS 앱과 `MARKETING_VERSION`에 맞는 버전(현재 `3.0.2`, 빌드 `3`)을 등록하세요. 유효한 배포 서명·스토어 프로비저닝과 개인정보 처리방침 URL·스토어 메타데이터·스크린샷을 준비한 뒤 Organizer의 **Distribute App → App Store Connect**로 검증·업로드합니다. 업로드·심사는 이 저장소의 빌드 성공과 별개입니다.
+
+macOS의 `CFBundleVersion`은 마케팅 버전과 별도로 계속 증가시킵니다. 이전 Electron 앱은 빌드 **`2.0.3`**을 배포했으므로 네이티브 앱의 빌드 `1`·`2`는 오히려 이전 앱보다 낮습니다(`2`는 `2.0.0`). [Launch Services는 같은 앱의 사본 중 더 높은 CFBundleVersion을 우선할 수 있습니다](https://developer.apple.com/library/archive/documentation/Carbon/Conceptual/LaunchServicesConcepts/LSCConcepts/LSCConcepts.html). Debug·Release의 `CURRENT_PROJECT_VERSION`은 **`3`**, `manageAppVersionAndBuildNumber`는 **false**로 유지해 export가 빌드 번호를 다시 정하지 않게 합니다. 이후 배포마다 마지막 배포 빌드보다 증가시키고 최종 `.pkg`에서 확인하세요. `VerifyIcon.swift`는 레거시 `2.0.3` 이하의 빌드를 아이콘 픽셀과 무관하게 거부합니다. 기존 `3.0.1 (2)` 설치본은 아이콘 리소스가 맞아도 이 배포 정책 검사를 실패합니다.
 
 App Sandbox·사용자 선택 파일 읽기/쓰기·app-scoped bookmark만 활성화합니다. broad Documents 접근·임시 예외·JIT 권한은 사용하지 않습니다. 개인정보 manifest는 `macOS/NFD2NFC/PrivacyInfo.xcprivacy`에 포함되어 있습니다. GitHub의 기존 Release 워크플로는 네이티브 테스트·빌드 검증으로 전환했으며 DMG 생성·업로드는 하지 않습니다.
+
+USB 장치 직접 접근은 사용하지 않으며 Debug·Release 모두 `ENABLE_RESOURCE_ACCESS_USB = NO`입니다. `.entitlements` 파일에 USB가 없어도 Xcode 빌드 설정이 서명 권한을 추가할 수 있으므로, 새 아카이브의 앱에 `codesign -d --entitlements -`를 실행하고 export된 패키지의 앱에서도 `com.apple.security.device.usb`가 없는지 확인하세요. 설정 변경 전 아카이브·패키지는 자동 갱신되지 않습니다.
 
 ### App Store 제출 자료
 
@@ -167,10 +171,12 @@ App Sandbox·사용자 선택 파일 읽기/쓰기·app-scoped bookmark만 활�
 
 분리된 조각이 하나로 이어지는 N 마크와 코발트 블루를 사용합니다. `macOS/NFD2NFC/Assets.xcassets`에는 macOS `AppIcon`의 16·32·128·256·512pt 각 1x/2x 슬롯 10개(최대 1024×1024), 벡터 `BrandIcon`, 라이트·다크 `BrandMark`, 18pt 1x/2x 메뉴 막대 템플릿 `StatusBarIcon`, 라이트·다크 `AccentColor`가 포함됩니다. 일반 설정·메뉴 위젯·표준 앱 정보 패널에 로고를 적용합니다.
 
-편집 가능한 SVG 원본과 재생성 스크립트는 `macOS/Branding`에 있습니다. `xcrun swift macOS/Branding/GenerateAssets.swift`로 카탈로그와 `resources/icon.icns` 내보내기를 같은 도형에서 재생성합니다. 앱 빌드는 카탈로그를 사용하며 별도 생성 스크립트 실행은 필요 없습니다.
+아이콘 도형의 기준은 `macOS/Branding/GenerateAssets.swift`의 Swift 경로이며 `macOS/Branding`의 SVG는 생성 결과입니다. `xcrun swift macOS/Branding/GenerateAssets.swift`로 카탈로그·`resources/icon.icns`·웹의 `web/public/favicon.svg`를 같은 N 도형에서 재생성합니다. SVG만 수정해도 앱 아이콘이 바뀌는 것은 아닙니다. 앱 빌드는 카탈로그를 사용하며 별도 생성 스크립트 실행은 필요 없습니다.
 
 Debug·Release의 **Standalone Icon File Behavior**는 **All**(`ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all`)입니다. 기본값은 일부 크기만 `AppIcon.icns`에 넣어 App Store 검증의 ‘512pt @2x 필수 아이콘 없음’ 오류를 일으킬 수 있습니다. 수정 전 아카이브는 자동 갱신되지 않으므로 새로 Archive한 항목으로 검증하세요.
-`make build`·`make archive`는 `macOS/Branding/VerifyIcon.swift`로 결과 앱의 ICNS를 검사하며 512pt @2x 이미지가 없거나 1024×1024로 디코딩되지 않으면 실패합니다. 카탈로그의 PNG 존재 여부만으로 성공 처리하지 않습니다.
+Xcode 타깃의 **Verify App Icons** 빌드 단계가 `macOS/Branding/VerifyIcon.swift`를 실행하므로 `make`·npm뿐 아니라 Xcode 직접 빌드와 Organizer용 Archive도 검사합니다. 결과 앱의 ICNS와 `Assets.car`를 각각 읽어 16·32·128·256·512pt의 1x/2x 총 10개 표현(16–1024px)을 모두 원본 PNG 픽셀과 대조합니다. 크기·배율·픽셀이 다르거나 표현이 빠지면 실패합니다. `Assets.car` 검사는 ICNS가 없는 임시 번들에서 수행해 파일 폴백으로 통과하지 못하게 합니다. `make export`는 입력 아카이브와 **export가 끝난 실제 `.pkg` 내부 앱**을 각각 검사합니다. 기존 export도 `xcrun swift macOS/Branding/VerifyIcon.swift path/to/NFD2NFC.pkg`, App Store 설치본도 같은 명령에 `.app` 경로를 주어 검사할 수 있습니다.
+
+알림의 왼쪽 앱 아이콘은 `AppModel`이 별도로 지정하지 않으며 macOS가 앱의 번들 아이콘으로 표시합니다. 따라서 리소스 검사 통과는 알림 센터의 실제 표시 성공과 다릅니다. 최종 배포본에서 새 변환 알림을 발생시켜 눈으로 확인하고, 처음 설치한 환경과 구버전에서 업데이트한 환경을 구분하세요. 이전 로고가 보이면 App Store 서명·버전·빌드, 실제 설치본의 ICNS·`Assets.car`, 실행 중인 앱 경로를 먼저 확인합니다. 중복 설치·등록이나 시스템 캐시는 가능한 원인이지, 확인 없이 단정할 진단이 아닙니다. 재설치만으로 해결된다고 보장하지 않으며 감시 폴더·북마크·기록이 있는 앱 컨테이너나 시스템 전체 알림 캐시를 무조건 삭제하지 않습니다.
 
 
 ### 개편 내역
@@ -178,6 +184,9 @@ Debug·Release의 **Standalone Icon File Behavior**는 **All**(`ASSETCATALOG_COM
 - Electron main/preload/renderer, IPC 브리지, 수동 큐, 폴더별 모드·필터·재귀 설정, 미리보기, 배치 Undo, Electron 의존성·패키징·DMG 배포 제거.
 - SwiftUI 화면·AppKit 메뉴 막대, 단일 직렬 FSEvents 감시, security-scoped bookmark, identity 검증 Undo, 묶음·원자적 상태 저장으로 교체.
 - 원본을 변경하지 않는 메뉴 막대 NFC ZIP 기능, 독립 아이콘 숨기기, 실제 시스템 로그인 항목 등록 추가.
+- App Store 심사에서 지적된 불필요한 USB 권한을 Debug·Release 빌드 설정에서 제거. 사용자 선택 파일 읽기/쓰기·북마크 권한은 유지.
+- 웹 파비콘을 네이티브와 같은 N 마크로 통일하고, App Store 묶음 미리보기를 최신 업로드 이미지와 동기화. 빌드·아카이브·내보내기의 이전 로고 혼입 검증 보강.
+- Electron → 네이티브 전환 시 `CFBundleVersion`이 `2.0.3`에서 `1`·`2`로 내려간 메타데이터 결함 수정. 별도 식별자의 Launch Services 실험에서 등록 순서와 무관하게 이전 앱이 선택됐고, 새 빌드 `3`에서는 신버전이 선택됨을 확인. 이는 앱 선택 규칙의 재현이며 시스템에 남은 알림 아이콘의 최종 갱신까지 보장하지는 않음.
 
 ## 웹 배포 · 광고 · 분석 · 검색 노출
 
