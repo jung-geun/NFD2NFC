@@ -3,7 +3,7 @@ import CoreGraphics
 import ImageIO
 import UniformTypeIdentifiers
 
-// One geometric source for the app icon, vector logo and menu-bar template.
+// One geometric source for the app icon, vector logo, website favicon and menu-bar template.
 // Run from any directory: xcrun swift macOS/Branding/GenerateAssets.swift
 let macOS = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
 let repository = macOS.deletingLastPathComponent()
@@ -218,6 +218,9 @@ let title = "<title>NFD2NFC</title><desc>Separated fragments joined into one com
 for (filename, fill) in [("Logo.svg", "#2563eb"), ("Logo-Monochrome.svg", "currentColor")] {
     let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\">\(title)<g fill=\"\(fill)\">\(paths)</g></svg>\n"
     try svg.write(to: branding.appendingPathComponent(filename), atomically: true, encoding: .utf8)
+    if filename == "Logo.svg" {
+        try svg.write(to: repository.appendingPathComponent("web/public/favicon.svg"), atomically: true, encoding: .utf8)
+    }
 }
 let iconSVG = """
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
@@ -241,4 +244,4 @@ iconutil.arguments = ["-c", "icns", iconset.path, "-o", repository.appendingPath
 try iconutil.run()
 iconutil.waitUntilExit()
 guard iconutil.terminationStatus == 0 else { throw NSError(domain: "BrandAssets", code: Int(iconutil.terminationStatus)) }
-print("Generated 10 macOS AppIcon slots, vector brand assets, 1x/2x status templates, adaptive accent color and ICNS export.")
+print("Generated 10 macOS AppIcon slots, vector brand assets, website favicon, 1x/2x status templates, adaptive accent color and ICNS export.")

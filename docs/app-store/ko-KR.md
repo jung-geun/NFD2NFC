@@ -4,13 +4,15 @@
 
 **제출 완료를 뜻하지 않습니다.** 공개 지원·개인정보 페이지의 실제 배포와 외부 접속, 배포 서명, 업로드 및 Apple 심사는 이 문서 작성에서 검증하지 않았습니다. 제출 전 체크리스트를 완료해야 합니다. Apple의 최종 심사 승인을 보장하지 않습니다.[1][8]
 
+아래 제출 문안의 원안은 `3.0.0`입니다. 현재 프로젝트의 `MARKETING_VERSION`은 `3.0.2`, 빌드는 `3`입니다. 출시된 `3.0.1 (2)` 다음의 패치 업데이트이며, App Store Connect 버전 레코드·최종 export·Review Notes를 `3.0.2 (3)`에 맞춥니다.
+
 ## 1. 앱 식별과 권장 설정
 
 | 항목 | 값 또는 처리 방법 |
 | --- | --- |
 | 플랫폼 | macOS |
-| 네이티브 앱 버전 | `3.0.0` (`MARKETING_VERSION`) |
-| 현재 프로젝트 빌드 번호 | `1` (`CURRENT_PROJECT_VERSION`); 실제 업로드 이력과 비교해 중복되지 않게 관리 |
+| 현재 네이티브 앱 버전 | `3.0.2` (`MARKETING_VERSION`); 아래 `3.0.0` 원안 문안과 구분 |
+| 현재 프로젝트 빌드 번호 | `3` (`CURRENT_PROJECT_VERSION`); `manageAppVersionAndBuildNumber = false`로 export에서도 유지 |
 | Bundle ID | `com.pieroot.nfd2nfc`; 개발자 계정의 App ID, 프로비저닝 및 App Store Connect 레코드와 일치 필요 |
 | 앱 내부 표시 이름 | `NFD → NFC`; 아래 스토어용 이름과 구분 |
 | 최소 OS | macOS 13.0 |
@@ -20,7 +22,7 @@
 | 로그인 | 필요 없음. App Review의 Sign-in required는 해제, 데모 계정·암호 입력 불필요 |
 | 마케팅 URL | 선택 항목. 웹 변환기와 네이티브 앱의 기능을 구분해 안내할 것 |
 
-`package.json`의 **2.0.3은 CLI·Node.js 패키지 버전**이며 네이티브 앱 3.0.0과 별개입니다. 앱 제출 때문에 패키지 버전을 변경하지 않습니다. App Store의 실제 Apple ID, SKU, 등록된 개발자/판매자 이름, 가격·판매 지역은 저장소에서 확인할 수 없으므로 임의로 생성하지 않습니다.[2]
+`package.json`의 **2.0.3은 CLI·Node.js 패키지 버전**이며 네이티브 앱 버전과 별개입니다. 앱 제출 때문에 패키지 버전을 변경하지 않습니다. App Store의 실제 Apple ID, SKU, 등록된 개발자/판매자 이름, 가격·판매 지역은 저장소에서 확인할 수 없으므로 임의로 생성하지 않습니다.[2]
 
 ## 2. 정확한 길이 측정
 
@@ -222,6 +224,7 @@ Apple이 허용하는 Mac 규격에는 **2880 × 1800, 16:10**이 포함됩니�
 App Store Connect의 App Privacy에서, 현재 네이티브 앱 코드의 범위에는 **데이터를 수집하지 않음(Data Not Collected)** 을 권장합니다. 수집하지 않는 데이터에 연결·추적 목적을 임의로 선택하지 마세요. 권한 있는 제출자가 실제 배포 바이너리와 운영 방식을 확인한 뒤 답변을 저장·게시해야 하며, 아래 근거가 바뀌면 답변도 갱신해야 합니다.[3]
 
 - `macOS/NFD2NFC/NFD2NFC.entitlements`: App Sandbox, 사용자 선택 파일 읽기/쓰기, app-scoped bookmark만 선언합니다. 네트워크 클라이언트 권한이 없습니다.
+- `project.pbxproj`: Debug·Release의 `ENABLE_RESOURCE_ACCESS_USB = NO`로 USB 직접 접근을 비활성화합니다. 빌드 설정이 `.entitlements` 외부에서 권한을 추가할 수 있으므로 최종 서명도 별도로 확인합니다.
 - `AppModel.swift`: 폴더 접근은 `NSOpenPanel`/security-scoped bookmark로 허용받습니다. 변환·ZIP 생성은 로컬 작업이며 로그인, 파일 업로드, 앱 내 문의 전송 경로가 없습니다. 알림은 `UNUserNotificationCenter`의 로컬 알림이지 원격 푸시 서버 등록이 아닙니다.
 - `StateStore.swift`: 설정, 선택 경로/북마크, 기록과 되돌리기 제외 정보는 앱 컨테이너의 `Application Support/NFD2NFC/state.json`에 저장됩니다. 기록은 최대 1,000건입니다. 기기 안에서만 처리·보관하는 데이터는 Apple의 수집 정의와 구분됩니다.
 - `macOS/Package.swift` 및 네이티브 소스: 광고·분석 SDK나 서버 업로드 클라이언트를 포함하지 않습니다. `MainView.swift`의 정책·지원 링크는 외부 브라우저를 열며 앱 안에 광고 웹뷰를 삽입하는 구현이 아닙니다.
@@ -261,7 +264,9 @@ Apple은 기기 밖으로 전송되어 개발자 또는 제3자가 실시간 요
 - [ ] 최종 제출 앱에서 일반 → 지원 및 개인정보의 두 링크를 직접 연다. 외부 기본 브라우저에서 각각 올바른 지원·정책 페이지가 열리고 앱 안에서 쉽게 찾을 수 있는지 확인한다. 소스 링크 존재만으로 검증을 대체하지 않는다.[8]
 - [ ] 최종 앱의 폴더 추가, 초기 스캔/후속 감시, 기록·개별 되돌리기, ZIP 원본 보존/실제 Documents 저장 권한, 알림 거부, 아이콘 숨김·재열기·종료·로그인 항목을 별도 테스트 자료로 확인한다. 네이티브/웹/CLI 기능을 혼동한 문구와 스크린샷이 없는지 확인한다.
 - [ ] 유효한 배포 서명·스토어 프로비저닝으로 **Release universal(arm64 + x86_64)** 빌드와 아카이브를 만든다. `make archive`/`make export` 또는 Xcode Organizer의 App Store Connect 배포 경로를 사용하고, 실제 결과의 아키텍처·서명·샌드박스·리소스/manifest 포함을 확인한다. 로컬 ad-hoc `make build` 성공을 스토어 서명·업로드 성공으로 간주하지 않는다.
-- [ ] App Store Connect의 macOS 레코드와 Xcode/App ID/프로비저닝의 `com.pieroot.nfd2nfc`, 앱 버전 `3.0.0`, 중복되지 않는 빌드 번호를 일치시킨다. SKU/Apple ID와 팀 소유권을 계정에서 확인하고 업로드 처리된 정확한 빌드를 선택한다. `package.json`/CLI 버전은 **2.0.3 그대로 유지**한다.[2]
+- [ ] Xcode의 **Verify App Icons** 단계가 성공했는지 확인한다. 최종 export의 실제 `.pkg`에도 `xcrun swift macOS/Branding/VerifyIcon.swift path/to/NFD2NFC.pkg`를 실행해 ICNS와 Assets.car 각각의 10개 크기·배율·픽셀을 검사한다. Organizer 직접 업로드는 아카이브 빌드 검증은 포함하지만 export 이후 `.pkg` 검사까지 대신하지 않는다. 제출할 패키지의 SHA-256·버전·빌드 번호를 업로드 기록과 함께 보관한다.
+- [ ] **정확한 App Store 설치본**의 서명·버전·빌드를 확인한 뒤 같은 검증기에 `.app` 경로를 입력한다. 새 변환 알림의 왼쪽 아이콘을 실제로 확인하며, 최초 설치와 구버전에서 업데이트한 경우를 나누어 기록한다. 번들 리소스가 맞아도 시스템 알림 표시가 다르면 이 검사를 통과로 기록하지 않는다. 캐시·중복 설치를 원인으로 단정하거나 컨테이너 초기화를 먼저 요구하지 않는다.
+- [ ] App Store Connect의 macOS 레코드와 Xcode/App ID/프로비저닝의 `com.pieroot.nfd2nfc`, 선택한 제출 버전과 최종 export의 빌드 번호를 일치시킨다. 마케팅 버전은 `3.0.2`, 현재 빌드는 **3**이며 `manageAppVersionAndBuildNumber=false`로 export에서도 유지한다. macOS 빌드는 마케팅 버전이 달라져도 이전 배포보다 증가해야 한다. 레거시 Electron의 `CFBundleVersion=2.0.3`보다 네이티브 빌드 `1`·`2`가 낮아 Launch Services가 이전 앱을 우선하는 문제가 재현됐으므로 다시 낮추지 않는다. 이후 릴리스는 마지막 제출·배포 빌드보다 높게 지정한다. `package.json`/CLI 버전은 **2.0.3 그대로 유지**한다.[2]
 - [ ] 한국어 Name/Subtitle/Promotional Text/Description/Keywords 및 URL을 해당 필드에 넣는다. What's New는 업데이트 제출일 때만 사용한다. 실제 App Store 미출시라면 3.0.0이더라도 첫 릴리스 절차를 따른다.[1]
 - [ ] 위 5장을 지정 순서로 업로드하고 실제 규격, 투명도 없음, 최종 UI 일치 및 민감한 정보 노출 없음을 확인한다.[4]
 - [ ] App Privacy에서 최종 바이너리·SDK·문의 운영 흐름을 확인해 답변을 저장·게시한다. 현재 코드의 권장값은 Data Not Collected이다. 개인정보 정책 URL과 manifest 검토는 별도로 완료한다.[3][7]
@@ -271,7 +276,33 @@ Apple은 기기 밖으로 전송되어 개발자 또는 제3자가 실시간 요
 - [ ] 위 영어 Notes를 붙여넣고 Sign-in required가 해제되어 있는지 확인한다. 존재하지 않는 테스트 계정이나 인증 정보를 만들지 않는다. 사용 가능한 문의 응답 체계와 공개 페이지를 심사 기간에도 유지한다.[1][8]
 - [ ] Organizer 검증·업로드 결과와 App Store Connect의 빌드 처리/제출 상태를 직접 확인한다. 오류·미완료 질문을 해결한 뒤 제출한다. 빌드 성공, 본 문서 작성, 메타데이터 제한 준수만으로 Apple의 승인이나 출시를 보장하지 않는다.[8]
 
-### 이번 작업에서 확인한 범위
+### USB 권한 반려(2.4.5) 재제출
+
+- 원인: `.entitlements`에 USB가 없어도 `ENABLE_RESOURCE_ACCESS_USB = YES`이면 `com.apple.security.device.usb`가 앱 서명에 포함됩니다. 이 앱은 USB 장치 직접 접근 API를 사용하지 않으므로 Debug·Release 모두 `NO`로 유지합니다. 외장 저장장치에서 사용자가 고른 파일에 접근하는 권한과 [USB 장치 직접 접근 권한](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.device.usb)은 구분합니다.
+- 설정 변경 뒤 새로 `make archive`와 `make export`를 실행합니다. `codesign -d --entitlements - .build/NFD2NFC.xcarchive/Products/Applications/NFD2NFC.app`로 USB 권한이 없고 App Sandbox·사용자 선택 파일 읽기/쓰기·북마크 권한은 남아 있는지 확인합니다.
+- export의 `.build/app-store/DistributionSummary.plist`와 실제 `.pkg`에서 추출한 앱 서명을 확인합니다. 아카이브·export의 빌드 번호는 다를 수 있으므로 최종 패키지의 버전·빌드 번호와 App Store Connect 레코드를 대조합니다. 새 아카이브·패키지 생성은 업로드나 재심사 제출 완료를 뜻하지 않습니다.
+- 같은 심사에 `2.1 App Completeness`가 함께 표시되면 상세 메시지를 별도로 확인합니다. USB 권한 제거만으로 다른 반려 항목까지 해결됐다고 판단하지 않습니다.
+- 2026-10-21 로컬 검증: `.build/NFD2NFC-usb-remediation.xcarchive`와 `.build/app-store-usb-remediation/NFD2NFC.pkg`를 새로 생성했습니다. 실제 패키지 앱은 `3.0.1 (2)`, arm64·x86_64 universal, Apple Distribution 서명이며 USB 권한 없이 기존 파일·북마크 권한을 유지합니다. 서명 무결성, 네이티브 테스트 36개·설정 저장 스모크, 별도 임시 폴더의 초기·실시간 NFC 변환과 ZIP CRC·내용·원본 보존을 확인했습니다. 파일 변환 스모크는 비샌드박스 실행이므로 Powerbox 파일 선택·저장 승인 경로 검증과 구분하며, 업로드·재심사 제출은 하지 않았습니다.
+
+### 2026-10-21 재심사 제출 기록
+
+- App Store Connect Apple ID `6822470642`, macOS 버전 `3.0.1`, 빌드 `2`를 업로드·처리 완료 후 선택했습니다. 업로드 Delivery UUID는 `fdc596fe-e5fe-4ad9-80a3-938e458f8ac9`이며, 업로드 과정의 실제 재서명 로그에서도 USB 권한이 없음을 확인했습니다.
+- 반려 상세의 `2.1(a)`는 샘플 파일 제공 요청이었습니다. [공개 샘플 ZIP](https://github.com/jung-geun/NFD2NFC/releases/download/app-review-samples-v1/NFD2NFC-App-Review-Samples-v1.zip)을 게시하고 비로그인 다운로드를 확인했습니다. SHA-256: `3a763dfc61c23ca6b4f00d944d4430251d0a92f4e57400e9daefddf65ef5a64d`. 실제 NFD 한글·라틴 이름, 하위/빈 폴더, 숨김 파일, 감시·추가 파일·ZIP용 별도 입력 및 영어 사용 절차를 포함합니다. 향후 심사를 위해 해당 릴리스를 유지합니다.
+- Review Notes와 Apple 메시지 답변에 USB 제거 설명, 샘플의 고정 URL, 폴더 접근 승인·초기/후속 감시·기록·개별 되돌리기·원본 보존 ZIP·설정 확인 절차를 제공했습니다. 스토어 Description은 이 문서의 정확한 네이티브 설명으로 교체해 수동 모드·일괄 되돌리기 등 지원하지 않는 기능 문구를 제거했습니다.
+- [제출 상세](https://appstoreconnect.apple.com/apps/6822470642/distribution/reviewsubmissions/details/199c8a8e-d282-4d52-bee8-49b04a5a5c08)에서 `3.0.1 (2)`의 **Waiting for Review** 상태를 확인했습니다. 기존 **승인 후 자동 출시** 설정을 유지했습니다. 이는 재심사 접수이며 Apple 승인 또는 스토어 공개 완료가 아닙니다.
+- 로컬 업로드·재심사 증빙: `.build/app-store-upload-receipt.json`. 앞 절의 “업로드·재심사 제출은 하지 않았음”은 로컬 검증 단계 당시 기록이며 이 제출 기록으로 후속 상태를 구분합니다.
+
+### 3.0.2 (3) 패치 업데이트
+
+- `3.0.1 (2)`는 2026-10-30 공개 App Store 조회 및 설치본의 MAS 영수증으로 출시를 확인했습니다. 위 Waiting for Review는 2026-10-21 당시 이력입니다.
+- 업데이트 내용: 이전 Electron 앱보다 낮아진 내부 빌드 번호를 바로잡아 macOS가 이전 앱 사본을 우선할 수 있는 문제를 수정했습니다. 기존 감시 폴더·북마크·기록을 초기화하지 않습니다. 이미 저장된 알림 아이콘의 갱신을 보장하는 변경은 아닙니다.
+- 새로운 기능 필드: `이전 버전에서 업데이트할 때 macOS가 앱을 식별하는 내부 버전 정보를 수정했습니다. 기존 감시 폴더, 설정 및 변환 기록은 그대로 유지됩니다.`
+- Review Notes에는 이 패치 설명과 기존 공개 심사용 샘플 URL을 유지하고, 승인 후 자동 출시 설정을 유지합니다. 업로드·심사·출시 상태는 실제 App Store Connect에서 별도 확인합니다.
+
+
+
+
+### 3.0.0 제출 문안 작성 당시 확인한 범위
 
 - `npm run web:build`, `npx tsc --noEmit --project web/tsconfig.json`, 로컬 ad-hoc `make build`가 통과했습니다. 실제 Release 실행 파일의 `arm64`·`x86_64` 아키텍처와 ICNS의 512pt @2x 1024×1024 이미지를 확인했습니다. App Store 배포 서명이나 아카이브 업로드 검증은 아닙니다.
 - 운영 빌드의 로컬 미리보기를 실제 Chromium에서 열어 1440×1000·390×844 화면, 라이트·다크 테마, 내부 링크·목차·메일 연락처·가로 넘침을 확인했습니다. 정책·지원 페이지는 JavaScript를 꺼도 읽을 수 있고, 스크립트·폼·외부 자원 요청이 없었습니다. FAQ의 Enter 열기·닫기와 본문 건너뛰기 키보드 포커스도 확인했습니다.
@@ -285,7 +316,7 @@ Apple은 기기 밖으로 전송되어 개발자 또는 제3자가 실시간 요
 
 - `README.md`: 현재 네이티브 기능·권한·ZIP 동작·백그라운드 동작, 웹/CLI와의 차이, 빌드 경로.
 - `package.json`: CLI/패키지 `2.0.3`, 공개 author 이메일, GitHub 지원 이슈 주소.
-- `macOS/NFD2NFC.xcodeproj/project.pbxproj`: `MARKETING_VERSION = 3.0.0`, Bundle ID, 빌드 번호와 Release 설정.
+- `macOS/NFD2NFC.xcodeproj/project.pbxproj`: `MARKETING_VERSION = 3.0.2`, Bundle ID, 빌드 번호, USB 비활성화와 Release 설정.
 - `macOS/NFD2NFC/Info.plist`, `NFD2NFC.entitlements`, `PrivacyInfo.xcprivacy`: 내부 이름/카테고리/OS, 샌드박스 권한, 추적·수집·API 이유 선언.
 - `macOS/NFD2NFC/AppModel.swift`, `StateStore.swift`, `MainView.swift`, `AppDelegate.swift`: 기능·권한·로컬 저장·지원 링크·재열기/종료의 실제 구현.
 - `macOS/Package.swift`: 네이티브 코어 패키지 구성. `web/vite.config.ts`: 별도 웹 홈페이지의 광고 주입 설정.

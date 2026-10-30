@@ -90,6 +90,7 @@
 				A30000000000000000000002 /* Sources */,
 				A30000000000000000000001 /* Frameworks */,
 				A30000000000000000000003 /* Resources */,
+				A30000000000000000000004 /* Verify App Icons */,
 			);
 			buildRules = (
 			);
@@ -162,6 +163,39 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		A30000000000000000000004 /* Verify App Icons */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = (
+				"$(SRCROOT)/Branding/VerifyIcon.swift",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_16x16.png",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_16x16@2x.png",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_32x32.png",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_32x32@2x.png",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_128x128.png",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_256x256.png",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_256x256@2x.png",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_512x512.png",
+				"$(SRCROOT)/NFD2NFC/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png",
+				"$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/AppIcon.icns",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Assets.car",
+			);
+			name = "Verify App Icons";
+			outputPaths = (
+				"$(TEMP_DIR)/IconVerificationScratch",
+				"$(TEMP_DIR)/IconVerificationModules",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nexport TMPDIR=\"${TEMP_DIR}/IconVerificationScratch\"\nCACHE=\"${TEMP_DIR}/IconVerificationModules\"\nmkdir -p \"$TMPDIR\" \"$CACHE\"\nxcrun swift -module-cache-path \"$CACHE\" \"${SRCROOT}/Branding/VerifyIcon.swift\" \"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		A30000000000000000000002 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -221,7 +255,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = VQXGRP23X5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -234,7 +268,7 @@
 				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = YES;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NFD2NFC/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = NFD2NFC;
@@ -243,7 +277,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pieroot.nfd2nfc;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -260,7 +294,7 @@
 				CODE_SIGN_ENTITLEMENTS = NFD2NFC/NFD2NFC.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = VQXGRP23X5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -273,7 +307,7 @@
 				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = YES;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NFD2NFC/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = NFD2NFC;
@@ -282,7 +316,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.2;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pieroot.nfd2nfc;
 				PRODUCT_NAME = "$(TARGET_NAME)";

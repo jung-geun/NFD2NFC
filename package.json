@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "dev": "open macOS/NFD2NFC.xcodeproj",
-    "build:app": "xcodebuild -project macOS/NFD2NFC.xcodeproj -scheme NFD2NFC -configuration Release -derivedDataPath .build/xcode CODE_SIGN_IDENTITY=- build",
+    "build:app": "make build",
     "build:cli": "tsc --project tsconfig.cli.json",
     "build:lib": "tsc --project tsconfig.lib.json",
     "build": "npm run build:cli && npm run build:lib && npm run build:app",
@@ -34,8 +34,8 @@
     "web:preview": "vite preview --config web/vite.config.ts",
     "test": "vitest run",
     "test:native": "make test",
-    "native:archive": "xcodebuild -project macOS/NFD2NFC.xcodeproj -scheme NFD2NFC -configuration Release -destination generic/platform=macOS -archivePath .build/NFD2NFC.xcarchive archive",
-    "native:export": "xcodebuild -exportArchive -archivePath .build/NFD2NFC.xcarchive -exportOptionsPlist macOS/ExportOptions.plist -exportPath .build/app-store",
+    "native:archive": "make archive",
+    "native:export": "make export",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit && tsc --noEmit --project tsconfig.cli.json && tsc --noEmit --project tsconfig.lib.json"
